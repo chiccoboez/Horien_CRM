@@ -21,16 +21,17 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChang
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
-            <div className="relative">
+            <button
+              onClick={() => onViewChange('dashboard')}
+              className="hover:opacity-80 transition-opacity"
+            >
               <img 
                 src="/Horien_SBS_Logotype_RGB_EnergeticGreen.png" 
                 alt="Horien Logo" 
                 className="h-10 w-auto"
-                style={{
-                  filter: 'brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%)'
-                }}
               />
-            </div>
+            </button>
+            <h1 className="text-xl font-bold text-white">CRM</h1>
           </div>
           
           <div className="flex space-x-1">

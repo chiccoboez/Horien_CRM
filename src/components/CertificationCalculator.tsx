@@ -5,7 +5,7 @@ export const CertificationCalculator: React.FC = () => {
   const [invoiceValue, setInvoiceValue] = useState<number>(0);
 
   const calculateCertificationPrice = (value: number): number => {
-    // Formula: ((Value * 1.06 * 0.18%) + 100 + 30) / 0.94
+    // Corrected formula: ((Value * 1.06 * 0.18%) + 100 + 30) / 0.94
     const result = ((value * 1.06 * 0.0018) + 100 + 30) / 0.94;
     return result;
   };
