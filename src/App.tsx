@@ -8,7 +8,7 @@ import { SaudiRacks } from './components/SaudiRacks';
 import { CertificationCalculator } from './components/CertificationCalculator';
 import { ExcelUpload } from './components/ExcelUpload';
 import { mockCustomers, mockProductFamilies } from './data/mockData';
-import { Customer, ProductFamily, View } from './types';
+import { Customer, ProductFamily, View, Task } from './types';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -16,6 +16,26 @@ function App() {
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [productFamilies, setProductFamilies] = useState<ProductFamily[]>(mockProductFamilies);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
+  const [globalTasks, setGlobalTasks] = useState<Task[]>([
+    {
+      id: 'global-1',
+      title: 'Review quarterly sales report',
+      description: 'Analyze Q1 sales performance and prepare presentation for management',
+      registrationDate: '2024-01-20',
+      expiryDate: '2024-02-01',
+      completed: false,
+      createdAt: '2024-01-20T09:00:00Z'
+    },
+    {
+      id: 'global-2',
+      title: 'Update product catalog',
+      description: 'Add new product specifications and pricing to the catalog',
+      registrationDate: '2024-01-18',
+      expiryDate: '2024-01-30',
+      completed: false,
+      createdAt: '2024-01-18T14:00:00Z'
+    }
+  ]);
 
   const handleViewChange = (view: View) => {
     setCurrentView(view);
@@ -79,13 +99,21 @@ function App() {
     alert(`Successfully imported ${importedCustomers.length} customers and ${importedProductFamilies.length} product families!`);
   };
 
+  const handleGlobalTasksUpdate = (tasks: Task[]) => {
+    setGlobalTasks(tasks);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Navigation currentView={currentView} onViewChange={handleViewChange} />
       
       <main>
         {currentView === 'dashboard' && (
-          <Dashboard customers={customers} />
+          <Dashboard 
+            customers={customers} 
+            globalTasks={globalTasks}
+            onGlobalTasksUpdate={handleGlobalTasksUpdate}
+          />
         )}
         
         {currentView === 'customers' && (

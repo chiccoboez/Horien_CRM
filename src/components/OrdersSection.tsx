@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, ShoppingCart, Upload, Download, Eye, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, ShoppingCart, Upload, Download, Eye, X, FolderOpen } from 'lucide-react';
 import { Order, OrderDocument } from '../types';
 
 interface OrdersSectionProps {
   orders: Order[];
   onOrdersUpdate: (orders: Order[]) => void;
   isEditing: boolean;
+}
+
+interface FolderStructure {
+  [key: string]: OrderDocument[];
 }
 
 export const OrdersSection: React.FC<OrdersSectionProps> = ({
@@ -24,6 +28,8 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
     ocName: '',
     paid: 'No'
   });
+  const [folderStructures, setFolderStructures] = useState<{[orderId: string]: FolderStructure}>({});
+  const [expandedFolders, setExpandedFolders] = useState<{[key: string]: boolean}>({});
 
   const handleAddOrder = () => {
     if (formData.finalUser.trim() && formData.projectName.trim()) {
@@ -66,6 +72,10 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
 
   const handleDeleteOrder = (orderId: string) => {
     onOrdersUpdate(orders.filter(o => o.id !== orderId));
+    // Clean up folder structures for deleted order
+    const newFolderStructures = { ...folderStructures };
+    delete newFolderStructures[orderId];
+    setFolderStructures(newFolderStructures);
   };
 
   const handleFileUpload = (orderId: string, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +99,38 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
     }
   };
 
+  const handleFolderUpload = (orderId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newFolderStructure: FolderStructure = { ...folderStructures[orderId] || {} };
+      
+      Array.from(files).forEach(file => {
+        const relativePath = file.webkitRelativePath || file.name;
+        const pathParts = relativePath.split('/');
+        const folderName = pathParts[0];
+        
+        if (!newFolderStructure[folderName]) {
+          newFolderStructure[folderName] = [];
+        }
+        
+        const newDocument: OrderDocument = {
+          id: `${Date.now()}-${Math.random()}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: URL.createObjectURL(file)
+        };
+        
+        newFolderStructure[folderName].push(newDocument);
+      });
+      
+      setFolderStructures({
+        ...folderStructures,
+        [orderId]: newFolderStructure
+      });
+    }
+  };
+
   const handleDeleteDocument = (orderId: string, documentId: string) => {
     const updatedOrders = orders.map(order =>
       order.id === orderId
@@ -96,6 +138,52 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
         : order
     );
     onOrdersUpdate(updatedOrders);
+  };
+
+  const handleDeleteFolder = (orderId: string, folderName: string) => {
+    const newFolderStructures = { ...folderStructures };
+    if (newFolderStructures[orderId]) {
+      delete newFolderStructures[orderId][folderName];
+      if (Object.keys(newFolderStructures[orderId]).length === 0) {
+        delete newFolderStructures[orderId];
+      }
+    }
+    setFolderStructures(newFolderStructures);
+    
+    // Remove from expanded folders
+    const folderKey = `${orderId}-${folderName}`;
+    const newExpandedFolders = { ...expandedFolders };
+    delete newExpandedFolders[folderKey];
+    setExpandedFolders(newExpandedFolders);
+  };
+
+  const handleDeleteFolderFile = (orderId: string, folderName: string, fileId: string) => {
+    const newFolderStructures = { ...folderStructures };
+    if (newFolderStructures[orderId] && newFolderStructures[orderId][folderName]) {
+      newFolderStructures[orderId][folderName] = newFolderStructures[orderId][folderName].filter(file => file.id !== fileId);
+      
+      if (newFolderStructures[orderId][folderName].length === 0) {
+        delete newFolderStructures[orderId][folderName];
+        if (Object.keys(newFolderStructures[orderId]).length === 0) {
+          delete newFolderStructures[orderId];
+        }
+        
+        // Remove from expanded folders
+        const folderKey = `${orderId}-${folderName}`;
+        const newExpandedFolders = { ...expandedFolders };
+        delete newExpandedFolders[folderKey];
+        setExpandedFolders(newExpandedFolders);
+      }
+    }
+    setFolderStructures(newFolderStructures);
+  };
+
+  const toggleFolder = (orderId: string, folderName: string) => {
+    const folderKey = `${orderId}-${folderName}`;
+    setExpandedFolders(prev => ({
+      ...prev,
+      [folderKey]: !prev[folderKey]
+    }));
   };
 
   const resetForm = () => {
@@ -341,54 +429,145 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="text-sm font-medium text-slate-700">Documents</h5>
                     {isEditing && (
-                      <label className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 cursor-pointer text-sm">
-                        <Upload className="h-4 w-4" />
-                        <span>Upload</span>
-                        <input
-                          type="file"
-                          className="hidden"
-                          onChange={(e) => handleFileUpload(order.id, e)}
-                        />
-                      </label>
+                      <div className="flex space-x-2">
+                        <label className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 cursor-pointer text-sm">
+                          <Upload className="h-4 w-4" />
+                          <span>Upload File</span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(order.id, e)}
+                          />
+                        </label>
+                        <label className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 cursor-pointer text-sm">
+                          <FolderOpen className="h-4 w-4" />
+                          <span>Upload Folder</span>
+                          <input
+                            type="file"
+                            multiple
+                            webkitdirectory=""
+                            className="hidden"
+                            onChange={(e) => handleFolderUpload(order.id, e)}
+                          />
+                        </label>
+                      </div>
                     )}
                   </div>
                   
-                  {order.documents.length === 0 ? (
+                  {/* Folder Structure */}
+                  {folderStructures[order.id] && Object.keys(folderStructures[order.id]).length > 0 && (
+                    <div className="mb-3">
+                      <h6 className="text-xs font-medium text-slate-600 mb-2">Folders:</h6>
+                      <div className="space-y-2">
+                        {Object.entries(folderStructures[order.id]).map(([folderName, files]) => {
+                          const folderKey = `${order.id}-${folderName}`;
+                          const isExpanded = expandedFolders[folderKey];
+                          
+                          return (
+                            <div key={folderName} className="border border-slate-200 rounded">
+                              <div className="flex items-center justify-between p-2 bg-slate-50 rounded-t">
+                                <button
+                                  onClick={() => toggleFolder(order.id, folderName)}
+                                  className="flex items-center space-x-2 text-slate-900 hover:text-slate-700"
+                                >
+                                  <FolderOpen className="h-4 w-4 text-emerald-600" />
+                                  <span className="text-sm font-medium">{folderName}</span>
+                                  <span className="text-xs text-slate-500">({files.length} files)</span>
+                                  <span className="text-slate-400 text-xs">
+                                    {isExpanded ? '▼' : '▶'}
+                                  </span>
+                                </button>
+                                {isEditing && (
+                                  <button
+                                    onClick={() => handleDeleteFolder(order.id, folderName)}
+                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {isExpanded && (
+                                <div className="p-2 space-y-1">
+                                  {files.map((file) => (
+                                    <div key={file.id} className="flex items-center justify-between p-1 bg-white border border-slate-100 rounded text-xs">
+                                      <span className="text-slate-900">{file.name}</span>
+                                      <div className="flex items-center space-x-1">
+                                        <button
+                                          onClick={() => window.open(file.url, '_blank')}
+                                          className="p-1 text-slate-600 hover:bg-slate-100 rounded"
+                                        >
+                                          <Eye className="h-3 w-3" />
+                                        </button>
+                                        <a
+                                          href={file.url}
+                                          download={file.name}
+                                          className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
+                                        >
+                                          <Download className="h-3 w-3" />
+                                        </a>
+                                        {isEditing && (
+                                          <button
+                                            onClick={() => handleDeleteFolderFile(order.id, folderName, file.id)}
+                                            className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Individual Files */}
+                  {order.documents.length === 0 && (!folderStructures[order.id] || Object.keys(folderStructures[order.id]).length === 0) ? (
                     <p className="text-sm text-slate-500">No documents uploaded</p>
                   ) : (
-                    <div className="space-y-2">
-                      {order.documents.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between bg-slate-50 p-2 rounded">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-slate-900">{doc.name}</span>
-                            <span className="text-xs text-slate-500">({(doc.size / 1024).toFixed(1)} KB)</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={() => window.open(doc.url, '_blank')}
-                              className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <a
-                              href={doc.url}
-                              download={doc.name}
-                              className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
-                            >
-                              <Download className="h-4 w-4" />
-                            </a>
-                            {isEditing && (
-                              <button
-                                onClick={() => handleDeleteDocument(order.id, doc.id)}
-                                className="p-1 text-red-600 hover:bg-red-100 rounded"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
+                    order.documents.length > 0 && (
+                      <div>
+                        <h6 className="text-xs font-medium text-slate-600 mb-2">Files:</h6>
+                        <div className="space-y-2">
+                          {order.documents.map((doc) => (
+                            <div key={doc.id} className="flex items-center justify-between bg-slate-50 p-2 rounded">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-slate-900">{doc.name}</span>
+                                <span className="text-xs text-slate-500">({(doc.size / 1024).toFixed(1)} KB)</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <button
+                                  onClick={() => window.open(doc.url, '_blank')}
+                                  className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                                <a
+                                  href={doc.url}
+                                  download={doc.name}
+                                  className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </a>
+                                {isEditing && (
+                                  <button
+                                    onClick={() => handleDeleteDocument(order.id, doc.id)}
+                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )
                   )}
                 </div>
               </div>

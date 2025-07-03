@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye } from 'lucide-react';
-import { Customer } from '../types';
+import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2 } from 'lucide-react';
+import { Customer, Task } from '../types';
 
 interface DashboardProps {
   customers: Customer[];
+  globalTasks: Task[];
+  onGlobalTasksUpdate: (tasks: Task[]) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ customers }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, onGlobalTasksUpdate }) => {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'customer'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterPaid, setFilterPaid] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [showAddGlobalTask, setShowAddGlobalTask] = useState(false);
+  const [globalTaskForm, setGlobalTaskForm] = useState({
+    title: '',
+    description: '',
+    registrationDate: new Date().toISOString().split('T')[0],
+    expiryDate: new Date().toISOString().split('T')[0]
+  });
 
   // Get current month start and end dates
   const now = new Date();
@@ -27,13 +36,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers }) => {
   );
 
   // Collect all tasks from all customers
-  const allTasks = customers.flatMap(customer => 
+  const allCustomerTasks = customers.flatMap(customer => 
     (customer.tasks || []).map(task => ({
       ...task,
       customerName: customer.name,
       customerId: customer.id
     }))
   );
+
+  // Combine global tasks and customer tasks
+  const allTasks = [
+    ...globalTasks.map(task => ({ ...task, customerName: 'General', customerId: 'global' })),
+    ...allCustomerTasks
+  ];
 
   // Get last 10 orders
   const lastOrders = [...allOrders]
@@ -118,6 +133,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers }) => {
     return new Date(expiryDate) < new Date();
   };
 
+  const handleAddGlobalTask = () => {
+    if (globalTaskForm.title.trim() && globalTaskForm.description.trim()) {
+      const newTask: Task = {
+        id: `global-${Date.now()}`,
+        title: globalTaskForm.title,
+        description: globalTaskForm.description,
+        registrationDate: globalTaskForm.registrationDate,
+        expiryDate: globalTaskForm.expiryDate,
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      onGlobalTasksUpdate([newTask, ...globalTasks]);
+      setGlobalTaskForm({
+        title: '',
+        description: '',
+        registrationDate: new Date().toISOString().split('T')[0],
+        expiryDate: new Date().toISOString().split('T')[0]
+      });
+      setShowAddGlobalTask(false);
+    }
+  };
+
+  const handleDeleteTask = (taskId: string, isGlobal: boolean) => {
+    if (isGlobal) {
+      onGlobalTasksUpdate(globalTasks.filter(task => task.id !== taskId));
+    }
+    // For customer tasks, we would need to update the specific customer
+    // This would require additional props and handlers
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -161,54 +206,119 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers }) => {
       </div>
 
       {/* Tasks Table */}
-      {upcomingTasks.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-          <div className="p-6 border-b border-slate-200">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-slate-600" />
               <h3 className="text-lg font-semibold text-slate-900">Tasks</h3>
             </div>
+            <button
+              onClick={() => setShowAddGlobalTask(true)}
+              className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Task</span>
+            </button>
           </div>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left py-3 px-6 font-medium text-slate-900">Expiry Date</th>
-                  <th className="text-left py-3 px-6 font-medium text-slate-900">Title</th>
-                  <th className="text-left py-3 px-6 font-medium text-slate-900">Customer</th>
-                  <th className="text-left py-3 px-6 font-medium text-slate-900">Status</th>
-                  <th className="text-left py-3 px-6 font-medium text-slate-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {upcomingTasks.map((task) => (
-                  <React.Fragment key={`${task.customerId}-${task.id}`}>
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-slate-500" />
-                          <span className="text-slate-900">{new Date(task.expiryDate).toLocaleDateString()}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="font-medium text-slate-900">{task.title}</div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="font-medium text-slate-900">{task.customerName}</div>
-                      </td>
-                      <td className="py-4 px-6">
-                        {isTaskOverdue(task.expiryDate) ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Overdue
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            Pending
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6">
+        {showAddGlobalTask && (
+          <div className="p-6 border-b border-slate-200 bg-slate-50">
+            <h4 className="font-medium text-slate-900 mb-3">Add New Task</h4>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Task title *"
+                value={globalTaskForm.title}
+                onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, title: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Registration Date</label>
+                  <input
+                    type="date"
+                    value={globalTaskForm.registrationDate}
+                    onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, registrationDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Expiry Date</label>
+                  <input
+                    type="date"
+                    value={globalTaskForm.expiryDate}
+                    onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, expiryDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <textarea
+                placeholder="Task description *"
+                value={globalTaskForm.description}
+                onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, description: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleAddGlobalTask}
+                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+                >
+                  Add Task
+                </button>
+                <button
+                  onClick={() => setShowAddGlobalTask(false)}
+                  className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="text-left py-3 px-6 font-medium text-slate-900">Expiry Date</th>
+                <th className="text-left py-3 px-6 font-medium text-slate-900">Title</th>
+                <th className="text-left py-3 px-6 font-medium text-slate-900">Customer</th>
+                <th className="text-left py-3 px-6 font-medium text-slate-900">Status</th>
+                <th className="text-left py-3 px-6 font-medium text-slate-900">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {upcomingTasks.map((task) => (
+                <React.Fragment key={`${task.customerId}-${task.id}`}>
+                  <tr className="hover:bg-slate-50 transition-colors">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-4 w-4 text-slate-500" />
+                        <span className="text-slate-900">{new Date(task.expiryDate).toLocaleDateString()}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-medium text-slate-900">{task.title}</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-medium text-slate-900">{task.customerName}</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      {isTaskOverdue(task.expiryDate) ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Overdue
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center space-x-2">
                         <button
                           onClick={() => setExpandedTask(expandedTask === `${task.customerId}-${task.id}` ? null : `${task.customerId}-${task.id}`)}
                           className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
@@ -216,31 +326,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers }) => {
                           <Eye className="h-4 w-4" />
                           <span>{expandedTask === `${task.customerId}-${task.id}` ? 'Hide' : 'View'}</span>
                         </button>
+                        {task.customerId === 'global' && (
+                          <button
+                            onClick={() => handleDeleteTask(task.id, true)}
+                            className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedTask === `${task.customerId}-${task.id}` && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 bg-slate-50">
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-sm font-medium text-slate-700">Description:</span>
+                            <p className="text-sm text-slate-900 mt-1">{task.description}</p>
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-slate-600">
+                            <span>Registered: {new Date(task.registrationDate).toLocaleDateString()}</span>
+                            <span>Due: {new Date(task.expiryDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
                       </td>
                     </tr>
-                    {expandedTask === `${task.customerId}-${task.id}` && (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-4 bg-slate-50">
-                          <div className="space-y-2">
-                            <div>
-                              <span className="text-sm font-medium text-slate-700">Description:</span>
-                              <p className="text-sm text-slate-900 mt-1">{task.description}</p>
-                            </div>
-                            <div className="flex items-center space-x-4 text-sm text-slate-600">
-                              <span>Registered: {new Date(task.registrationDate).toLocaleDateString()}</span>
-                              <span>Due: {new Date(task.expiryDate).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {upcomingTasks.length === 0 && !showAddGlobalTask && (
+          <div className="text-center py-12">
+            <CheckCircle className="mx-auto h-12 w-12 text-slate-400" />
+            <h3 className="mt-2 text-sm font-medium text-slate-900">No pending tasks</h3>
+            <p className="mt-1 text-sm text-slate-500">All tasks are completed or no tasks have been created yet.</p>
+          </div>
+        )}
+      </div>
 
       {/* Last Offers Table */}
       {lastOffers.length > 0 && (
