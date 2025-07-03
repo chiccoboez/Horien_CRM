@@ -50,7 +50,8 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ onClose, onA
       contacts: [],
       notes: [],
       orders: [],
-      documents: []
+      documents: [],
+      tasks: []
     };
 
     onAdd(newCustomer);

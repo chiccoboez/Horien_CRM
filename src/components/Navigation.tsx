@@ -27,11 +27,10 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChang
             >
               <img 
                 src="/Horien_SBS_Logotype_RGB_EnergeticGreen.png" 
-                alt="Horien Logo" 
+                alt="Horien Salt Battery Solutions" 
                 className="h-10 w-auto"
               />
             </button>
-            <h1 className="text-xl font-bold text-white">CRM</h1>
           </div>
           
           <div className="flex space-x-1">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, User, Building2, Eye, Upload, Users, UserCheck, HardHat, Glasses } from 'lucide-react';
+import { Search, Plus, User, Building2, Eye, Upload, Users } from 'lucide-react';
 import { Customer } from '../types';
 import { AddCustomerModal } from './AddCustomerModal';
 
@@ -48,13 +48,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
       case 'Agent':
         return <User className="h-8 w-8 text-slate-600" />;
       case 'Customer':
-        return (
-          <div className="flex items-center space-x-1">
-            <UserCheck className="h-6 w-6 text-slate-600" />
-            <HardHat className="h-6 w-6 text-slate-600" />
-            <Glasses className="h-6 w-6 text-slate-600" />
-          </div>
-        );
+        return <Users className="h-8 w-8 text-slate-600" />;
       default:
         return <User className="h-8 w-8 text-slate-600" />;
     }

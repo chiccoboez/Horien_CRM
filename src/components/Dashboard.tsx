@@ -163,6 +163,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     // This would require additional props and handlers
   };
 
+  const handleDeleteAllTasks = () => {
+    if (window.confirm('Are you sure you want to delete all tasks? This action cannot be undone.')) {
+      onGlobalTasksUpdate([]);
+      // Note: This only deletes global tasks. Customer tasks would need additional handling
+      alert('All global tasks have been deleted. Customer-specific tasks remain unchanged.');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -213,13 +221,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
               <CheckCircle className="h-5 w-5 text-slate-600" />
               <h3 className="text-lg font-semibold text-slate-900">Tasks</h3>
             </div>
-            <button
-              onClick={() => setShowAddGlobalTask(true)}
-              className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Task</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              {upcomingTasks.length > 0 && (
+                <button
+                  onClick={handleDeleteAllTasks}
+                  className="inline-flex items-center space-x-2 bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete All</span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowAddGlobalTask(true)}
+                className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Task</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -326,14 +345,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                           <Eye className="h-4 w-4" />
                           <span>{expandedTask === `${task.customerId}-${task.id}` ? 'Hide' : 'View'}</span>
                         </button>
-                        {task.customerId === 'global' && (
-                          <button
-                            onClick={() => handleDeleteTask(task.id, true)}
-                            className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleDeleteTask(task.id, task.customerId === 'global')}
+                          className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

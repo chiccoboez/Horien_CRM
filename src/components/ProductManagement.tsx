@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, DollarSign, Users, Edit2, Save, X } from 'lucide-react';
+import { Package, DollarSign, Edit2, Save, X } from 'lucide-react';
 import { ProductFamily, Customer } from '../types';
 
 interface ProductManagementProps {
@@ -13,34 +13,31 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
 }) => {
   const [selectedFamily, setSelectedFamily] = useState<string>(productFamilies[0]?.id || '');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedProducts, setEditedProducts] = useState<{[productId: string]: {name: string, description: string}}>({});
+  const [editedProducts, setEditedProducts] = useState<{[productId: string]: {name: string, description: string, sku: string}}>({});
   
   const currentFamily = productFamilies.find(f => f.id === selectedFamily);
 
   const getProductStats = (productId: string) => {
     const product = currentFamily?.products.find(p => p.id === productId);
-    if (!product) return { customerCount: 0, avgPrice: 0 };
+    if (!product) return { avgPrice: 0 };
 
     const customerCount = product.customerPrices.length;
     const avgPrice = customerCount > 0 
       ? product.customerPrices.reduce((sum, cp) => sum + cp.price, 0) / customerCount
       : 0;
 
-    return { customerCount, avgPrice };
-  };
-
-  const formatValue = (value: string | undefined | null) => {
-    return value && value.trim() !== '' ? value : '-';
+    return { avgPrice };
   };
 
   const handleEditStart = () => {
     if (!currentFamily) return;
     
-    const productEdits: {[productId: string]: {name: string, description: string}} = {};
+    const productEdits: {[productId: string]: {name: string, description: string, sku: string}} = {};
     currentFamily.products.forEach(product => {
       productEdits[product.id] = {
         name: product.name,
-        description: product.description
+        description: product.description,
+        sku: product.sku
       };
     });
     setEditedProducts(productEdits);
@@ -59,7 +56,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     setEditedProducts({});
   };
 
-  const handleProductChange = (productId: string, field: 'name' | 'description', value: string) => {
+  const handleProductChange = (productId: string, field: 'name' | 'description' | 'sku', value: string) => {
     setEditedProducts(prev => ({
       ...prev,
       [productId]: {
@@ -67,6 +64,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
         [field]: value
       }
     }));
+  };
+
+  const formatValue = (value: string | undefined | null) => {
+    return value && value.trim() !== '' ? value : '-';
   };
 
   return (
@@ -168,9 +169,19 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                             ) : (
                               <h4 className="text-lg font-semibold text-slate-900">{product.name}</h4>
                             )}
-                            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded">
-                              {formatValue(product.sku)}
-                            </span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editedProduct?.sku || product.sku}
+                                onChange={(e) => handleProductChange(product.id, 'sku', e.target.value)}
+                                className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded border border-slate-300"
+                                placeholder="SKU"
+                              />
+                            ) : (
+                              <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded">
+                                {formatValue(product.sku)}
+                              </span>
+                            )}
                           </div>
                           
                           {isEditing ? (
@@ -184,7 +195,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                             <p className="text-slate-600 mb-4">{product.description}</p>
                           )}
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
                             <div className="flex items-center space-x-2">
                               <DollarSign className="h-5 w-5 text-emerald-600" />
                               <div>
@@ -192,14 +203,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                 <div className="font-semibold text-slate-900">
                                   {stats.avgPrice > 0 ? `€${stats.avgPrice.toFixed(2)}` : '-'}
                                 </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <Users className="h-5 w-5 text-slate-800" />
-                              <div>
-                                <div className="text-sm text-slate-500">Customers</div>
-                                <div className="font-semibold text-slate-900">{stats.customerCount}</div>
                               </div>
                             </div>
                           </div>

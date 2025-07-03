@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit2, Save, X, Trash2, User, Building2, MapPin, CreditCard, Phone, Mail, Users, UserCheck, HardHat, Glasses } from 'lucide-react';
+import { ArrowLeft, Edit2, Save, X, Trash2, User, Building2, MapPin, CreditCard, Phone, Mail, Users } from 'lucide-react';
 import { Customer, ProductFamily } from '../types';
 import { ContactsSection } from './ContactsSection';
 import { NotesSection } from './NotesSection';
@@ -165,13 +165,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
       case 'Agent':
         return <User className="h-12 w-12 text-slate-600" />;
       case 'Customer':
-        return (
-          <div className="flex items-center space-x-2">
-            <UserCheck className="h-10 w-10 text-slate-600" />
-            <HardHat className="h-10 w-10 text-slate-600" />
-            <Glasses className="h-10 w-10 text-slate-600" />
-          </div>
-        );
+        return <Users className="h-12 w-12 text-slate-600" />;
       default:
         return <User className="h-12 w-12 text-slate-600" />;
     }
