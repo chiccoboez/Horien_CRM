@@ -53,7 +53,8 @@ export const mockCustomers: Customer[] = [
         registrationDate: '2024-01-15',
         expiryDate: '2024-02-15',
         completed: false,
-        createdAt: '2024-01-15T10:00:00Z'
+        createdAt: '2024-01-15T10:00:00Z',
+        urgent: true
       }
     ]
   },
@@ -143,7 +144,8 @@ export const mockCustomers: Customer[] = [
         registrationDate: '2024-01-19',
         expiryDate: '2024-02-05',
         completed: false,
-        createdAt: '2024-01-19T09:00:00Z'
+        createdAt: '2024-01-19T09:00:00Z',
+        urgent: false
       }
     ]
   },

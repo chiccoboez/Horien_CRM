@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit2, Save, X, Trash2, User, Building2, MapPin, CreditCard, Phone, Mail, Users } from 'lucide-react';
+import { ArrowLeft, Edit2, Save, X, Trash2, User, Building2, MapPin, CreditCard, Phone, Mail, Users, Euro } from 'lucide-react';
 import { Customer, ProductFamily } from '../types';
 import { ContactsSection } from './ContactsSection';
 import { NotesSection } from './NotesSection';
@@ -553,7 +553,12 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
         {activeTab === 'pricing' && customer.type !== 'Agent' && Object.keys(customerPricing).length > 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-slate-900">Product Pricing</h2>
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
+                <div className="p-1 bg-slate-100 rounded">
+                  <Euro className="h-4 w-4 text-slate-800" />
+                </div>
+                <span>Product Pricing</span>
+              </h2>
               <div className="flex space-x-3">
                 {isPricingEditable ? (
                   <>
@@ -591,7 +596,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                       <thead className="bg-slate-50">
                         <tr>
                           <th className="text-left py-2 px-4 font-medium text-slate-900">Product</th>
-                          <th className="text-left py-2 px-4 font-medium text-slate-900">SKU</th>
+                          <th className="text-left py-2 px-4 font-medium text-slate-900">P/N</th>
                           <th className="text-left py-2 px-4 font-medium text-slate-900">Standard Price</th>
                           <th className="text-left py-2 px-4 font-medium text-slate-900">Discounted Price</th>
                         </tr>

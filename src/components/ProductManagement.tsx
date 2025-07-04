@@ -429,7 +429,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                   value={editedProduct?.sku || product.sku}
                                   onChange={(e) => handleProductChange(product.id, 'sku', e.target.value)}
                                   className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded border border-slate-300"
-                                  placeholder="SKU"
+                                  placeholder="P/N"
                                 />
                               ) : (
                                 <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded">
@@ -473,7 +473,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                   <tr>
                                     <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Customer</th>
                                     <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Type</th>
-                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Price</th>
+                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">P/N</th>
+                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Standard Price</th>
+                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Discounted Price</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
@@ -496,7 +498,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                             {customer?.type || 'Unknown'}
                                           </span>
                                         </td>
-                                        <td className="py-3 px-4 font-medium text-emerald-600">€{cp.price.toFixed(2)}</td>
+                                        <td className="py-3 px-4 text-slate-900">{formatValue(product.sku)}</td>
+                                        <td className="py-3 px-4 font-medium text-slate-900">€{cp.price.toFixed(2)}</td>
+                                        <td className="py-3 px-4 font-medium text-emerald-600">€{(cp.discountedPrice || cp.price).toFixed(2)}</td>
                                       </tr>
                                     );
                                   })}
@@ -644,7 +648,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Part Number (SKU)
+                    Part Number (P/N)
                   </label>
                   <input
                     type="text"

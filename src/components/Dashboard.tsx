@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle } from 'lucide-react';
 import { Customer, Task } from '../types';
 
 interface DashboardProps {
@@ -18,7 +18,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     title: '',
     description: '',
     registrationDate: new Date().toISOString().split('T')[0],
-    expiryDate: new Date().toISOString().split('T')[0]
+    expiryDate: new Date().toISOString().split('T')[0],
+    urgent: false
   });
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [expandedOffer, setExpandedOffer] = useState<string | null>(null);
@@ -76,10 +77,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 10);
 
-  // Get upcoming tasks (sorted by expiry date, not completed)
+  // Get upcoming tasks (sorted by urgency first, then expiry date, not completed)
   const upcomingTasks = [...allTasks]
     .filter(task => !task.completed)
-    .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime())
+    .sort((a, b) => {
+      // Urgent tasks first
+      if (a.urgent !== b.urgent) {
+        return a.urgent ? -1 : 1;
+      }
+      // Then by expiry date
+      return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+    })
     .slice(0, 10);
 
   // Calculate monthly metrics
@@ -146,14 +154,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
         registrationDate: globalTaskForm.registrationDate,
         expiryDate: globalTaskForm.expiryDate,
         completed: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        urgent: globalTaskForm.urgent
       };
       onGlobalTasksUpdate([newTask, ...globalTasks]);
       setGlobalTaskForm({
         title: '',
         description: '',
         registrationDate: new Date().toISOString().split('T')[0],
-        expiryDate: new Date().toISOString().split('T')[0]
+        expiryDate: new Date().toISOString().split('T')[0],
+        urgent: false
       });
       setShowAddGlobalTask(false);
     }
@@ -284,6 +294,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                 rows={3}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="urgent-global"
+                  checked={globalTaskForm.urgent}
+                  onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, urgent: e.target.checked })}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded"
+                />
+                <label htmlFor="urgent-global" className="text-sm font-medium text-slate-700">
+                  Mark as urgent
+                </label>
+              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleAddGlobalTask}
@@ -324,21 +346,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <div className="font-medium text-slate-900">{task.title}</div>
+                      <div className="flex items-center space-x-2">
+                        {task.urgent && (
+                          <div className="flex items-center space-x-1 text-red-600">
+                            <AlertTriangle className="h-4 w-4 fill-current" />
+                            <span className="text-xs font-medium">!</span>
+                          </div>
+                        )}
+                        <div className={`font-medium ${task.urgent ? 'text-red-900' : 'text-slate-900'}`}>
+                          {task.title}
+                        </div>
+                      </div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="font-medium text-slate-900">{task.customerName}</div>
                     </td>
                     <td className="py-4 px-6">
-                      {isTaskOverdue(task.expiryDate) ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Overdue
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          Pending
-                        </span>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {task.urgent && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Urgent
+                          </span>
+                        )}
+                        {isTaskOverdue(task.expiryDate) ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            Overdue
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Pending
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-2">

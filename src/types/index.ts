@@ -46,6 +46,7 @@ export interface Task {
   expiryDate: string;
   completed: boolean;
   createdAt: string;
+  urgent?: boolean;
 }
 
 export interface Order {

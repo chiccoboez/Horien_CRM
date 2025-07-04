@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, CheckCircle, Clock, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle, Clock, Calendar, AlertTriangle } from 'lucide-react';
 import { Task } from '../types';
 
 interface TasksSectionProps {
@@ -19,7 +19,8 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
     title: '',
     description: '',
     registrationDate: new Date().toISOString().split('T')[0],
-    expiryDate: new Date().toISOString().split('T')[0]
+    expiryDate: new Date().toISOString().split('T')[0],
+    urgent: false
   });
 
   const handleAddTask = () => {
@@ -31,7 +32,8 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
         registrationDate: formData.registrationDate,
         expiryDate: formData.expiryDate,
         completed: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        urgent: formData.urgent
       };
       onTasksUpdate([newTask, ...tasks]);
       resetForm();
@@ -44,7 +46,8 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
       title: task.title,
       description: task.description,
       registrationDate: task.registrationDate,
-      expiryDate: task.expiryDate
+      expiryDate: task.expiryDate,
+      urgent: task.urgent || false
     });
   };
 
@@ -77,16 +80,28 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
       title: '',
       description: '',
       registrationDate: new Date().toISOString().split('T')[0],
-      expiryDate: new Date().toISOString().split('T')[0]
+      expiryDate: new Date().toISOString().split('T')[0],
+      urgent: false
     });
     setShowAddForm(false);
     setEditingTask(null);
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {
+    // First, sort by completion status (incomplete first)
     if (a.completed !== b.completed) {
       return a.completed ? 1 : -1;
     }
+    
+    // For incomplete tasks, sort urgent first, then by expiry date
+    if (!a.completed && !b.completed) {
+      if (a.urgent !== b.urgent) {
+        return a.urgent ? -1 : 1;
+      }
+      return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+    }
+    
+    // For completed tasks, sort by expiry date
     return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
   });
 
@@ -156,6 +171,18 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
                 rows={3}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="urgent"
+                  checked={formData.urgent}
+                  onChange={(e) => setFormData({ ...formData, urgent: e.target.checked })}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded"
+                />
+                <label htmlFor="urgent" className="text-sm font-medium text-slate-700">
+                  Mark as urgent
+                </label>
+              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleAddTask}
@@ -178,8 +205,10 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
           <div key={task.id} className={`border rounded-lg p-4 ${
             task.completed 
               ? 'border-emerald-200 bg-emerald-50' 
-              : isTaskOverdue(task.expiryDate, task.completed)
+              : task.urgent
               ? 'border-red-200 bg-red-50'
+              : isTaskOverdue(task.expiryDate, task.completed)
+              ? 'border-orange-200 bg-orange-50'
               : 'border-slate-200'
           }`}>
             {editingTask?.id === task.id ? (
@@ -218,6 +247,18 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
                   rows={3}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`urgent-edit-${task.id}`}
+                    checked={formData.urgent}
+                    onChange={(e) => setFormData({ ...formData, urgent: e.target.checked })}
+                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded"
+                  />
+                  <label htmlFor={`urgent-edit-${task.id}`} className="text-sm font-medium text-slate-700">
+                    Mark as urgent
+                  </label>
+                </div>
                 <div className="flex space-x-2">
                   <button
                     onClick={handleUpdateTask}
@@ -247,14 +288,26 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
                     >
                       <CheckCircle className="h-5 w-5" />
                     </button>
+                    {task.urgent && !task.completed && (
+                      <div className="flex items-center space-x-1 text-red-600">
+                        <AlertTriangle className="h-4 w-4 fill-current" />
+                        <span className="text-xs font-medium">!</span>
+                      </div>
+                    )}
                     <h4 className={`font-medium ${
-                      task.completed ? 'text-emerald-800 line-through' : 'text-slate-900'
+                      task.completed ? 'text-emerald-800 line-through' : 
+                      task.urgent ? 'text-red-900' : 'text-slate-900'
                     }`}>
                       {task.title}
                     </h4>
                     {isTaskOverdue(task.expiryDate, task.completed) && (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                      <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
                         Overdue
+                      </span>
+                    )}
+                    {task.urgent && !task.completed && (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                        Urgent
                       </span>
                     )}
                   </div>
@@ -288,7 +341,8 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
                 </div>
 
                 <p className={`text-sm whitespace-pre-wrap ${
-                  task.completed ? 'text-emerald-700' : 'text-slate-700'
+                  task.completed ? 'text-emerald-700' : 
+                  task.urgent ? 'text-red-700' : 'text-slate-700'
                 }`}>
                   {task.description}
                 </p>
