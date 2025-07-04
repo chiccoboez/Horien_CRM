@@ -5,6 +5,7 @@ import { ProductFamily, Customer, Product } from '../types';
 interface ProductManagementProps {
   productFamilies: ProductFamily[];
   customers: Customer[];
+  onProductFamiliesUpdate?: (families: ProductFamily[]) => void;
 }
 
 interface AddFamilyForm {
@@ -17,13 +18,16 @@ interface AddProductForm {
   description: string;
   sku: string;
   basePrice: number;
+  familyId: string;
   customerPrices: { customerId: string; price: number; discountedPrice: number }[];
 }
 
 export const ProductManagement: React.FC<ProductManagementProps> = ({
-  productFamilies,
-  customers
+  productFamilies: initialProductFamilies,
+  customers,
+  onProductFamiliesUpdate
 }) => {
+  const [productFamilies, setProductFamilies] = useState<ProductFamily[]>(initialProductFamilies);
   const [selectedFamily, setSelectedFamily] = useState<string>(productFamilies[0]?.id || '');
   const [isEditing, setIsEditing] = useState(false);
   const [editedProducts, setEditedProducts] = useState<{[productId: string]: {name: string, description: string, sku: string}}>({});
@@ -43,6 +47,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     description: '',
     sku: '',
     basePrice: 0,
+    familyId: '',
     customerPrices: []
   });
   
@@ -94,8 +99,24 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   };
 
   const handleEditSave = () => {
-    // In a real application, this would save to the database
-    alert('Product and family changes would be saved to the database');
+    // Apply edits to the local state
+    const updatedFamilies = productFamilies.map(family => {
+      const editedFamily = editedFamilies[family.id];
+      const updatedProducts = family.products.map(product => {
+        const editedProduct = editedProducts[product.id];
+        return editedProduct ? { ...product, ...editedProduct } : product;
+      });
+      
+      return editedFamily 
+        ? { ...family, ...editedFamily, products: updatedProducts }
+        : { ...family, products: updatedProducts };
+    });
+
+    setProductFamilies(updatedFamilies);
+    if (onProductFamiliesUpdate) {
+      onProductFamiliesUpdate(updatedFamilies);
+    }
+    
     setIsEditing(false);
     setEditedProducts({});
     setEditedFamilies({});
@@ -123,22 +144,60 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
 
   const handleAddFamily = () => {
     if (addFamilyForm.name.trim()) {
-      // In a real application, this would save to the database
-      alert(`New family "${addFamilyForm.name}" would be added to the database`);
+      const newFamily: ProductFamily = {
+        id: `family-${Date.now()}`,
+        name: addFamilyForm.name,
+        description: addFamilyForm.description,
+        products: []
+      };
+
+      const updatedFamilies = [...productFamilies, newFamily];
+      setProductFamilies(updatedFamilies);
+      
+      if (onProductFamiliesUpdate) {
+        onProductFamiliesUpdate(updatedFamilies);
+      }
+
+      // Select the new family
+      setSelectedFamily(newFamily.id);
+      
       setAddFamilyForm({ name: '', description: '' });
       setShowAddFamily(false);
     }
   };
 
   const handleAddProduct = () => {
-    if (addProductForm.name.trim() && selectedFamily) {
-      // In a real application, this would save to the database
-      alert(`New product "${addProductForm.name}" would be added to the selected family`);
+    if (addProductForm.name.trim() && addProductForm.familyId) {
+      const newProduct: Product = {
+        id: `product-${Date.now()}`,
+        name: addProductForm.name,
+        description: addProductForm.description,
+        sku: addProductForm.sku,
+        basePrice: addProductForm.basePrice,
+        customerPrices: addProductForm.customerPrices.filter(cp => cp.customerId)
+      };
+
+      const updatedFamilies = productFamilies.map(family => 
+        family.id === addProductForm.familyId
+          ? { ...family, products: [...family.products, newProduct] }
+          : family
+      );
+
+      setProductFamilies(updatedFamilies);
+      
+      if (onProductFamiliesUpdate) {
+        onProductFamiliesUpdate(updatedFamilies);
+      }
+
+      // Select the family where the product was added
+      setSelectedFamily(addProductForm.familyId);
+      
       setAddProductForm({
         name: '',
         description: '',
         sku: '',
         basePrice: 0,
+        familyId: '',
         customerPrices: []
       });
       setShowAddProduct(false);
@@ -172,6 +231,15 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     return value && value.trim() !== '' ? value : '-';
   };
 
+  // Set default family when opening add product modal
+  const handleShowAddProduct = () => {
+    setAddProductForm(prev => ({
+      ...prev,
+      familyId: selectedFamily || productFamilies[0]?.id || ''
+    }));
+    setShowAddProduct(true);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -189,8 +257,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
               <span>Add Family</span>
             </button>
             <button
-              onClick={() => setShowAddProduct(true)}
-              disabled={!selectedFamily}
+              onClick={handleShowAddProduct}
+              disabled={productFamilies.length === 0}
               className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
             >
               <Plus className="h-4 w-4" />
@@ -231,51 +299,64 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <h3 className="font-semibold text-slate-900 mb-4">Product Families</h3>
-            <div className="space-y-2">
-              {productFamilies.map((family) => {
-                const editedFamily = editedFamilies[family.id];
-                return (
-                  <div key={family.id}>
-                    <button
-                      onClick={() => setSelectedFamily(family.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                        selectedFamily === family.id
-                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                          : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      {isEditing ? (
-                        <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="text"
-                            value={editedFamily?.name || family.name}
-                            onChange={(e) => handleFamilyChange(family.id, 'name', e.target.value)}
-                            className="w-full text-sm font-medium bg-white border border-slate-300 rounded px-2 py-1"
-                          />
-                          <textarea
-                            value={editedFamily?.description || family.description}
-                            onChange={(e) => handleFamilyChange(family.id, 'description', e.target.value)}
-                            className="w-full text-xs bg-white border border-slate-300 rounded px-2 py-1"
-                            rows={2}
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="font-medium">{family.name}</div>
-                          <div className="text-xs text-slate-500">{family.products.length} products</div>
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+            {productFamilies.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                <p className="text-sm text-slate-500">No product families yet</p>
+                <button
+                  onClick={() => setShowAddFamily(true)}
+                  className="mt-2 text-sm text-emerald-600 hover:text-emerald-800"
+                >
+                  Add your first family
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {productFamilies.map((family) => {
+                  const editedFamily = editedFamilies[family.id];
+                  return (
+                    <div key={family.id}>
+                      <button
+                        onClick={() => setSelectedFamily(family.id)}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          selectedFamily === family.id
+                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {isEditing ? (
+                          <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editedFamily?.name || family.name}
+                              onChange={(e) => handleFamilyChange(family.id, 'name', e.target.value)}
+                              className="w-full text-sm font-medium bg-white border border-slate-300 rounded px-2 py-1"
+                            />
+                            <textarea
+                              value={editedFamily?.description || family.description}
+                              onChange={(e) => handleFamilyChange(family.id, 'description', e.target.value)}
+                              className="w-full text-xs bg-white border border-slate-300 rounded px-2 py-1"
+                              rows={2}
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="font-medium">{family.name}</div>
+                            <div className="text-xs text-slate-500">{family.products.length} products</div>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Product Details */}
         <div className="lg:col-span-3">
-          {currentFamily && (
+          {currentFamily ? (
             <div className="space-y-6">
               {/* Family Header */}
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -308,112 +389,140 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
               </div>
 
               {/* Products Grid */}
-              <div className="grid grid-cols-1 gap-6">
-                {currentFamily.products.map((product) => {
-                  const stats = getProductStats(product.id);
-                  const editedProduct = editedProducts[product.id];
-                  
-                  return (
-                    <div key={product.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-6">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
+              {currentFamily.products.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+                  <Package className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No products in this family</h3>
+                  <p className="text-slate-600 mb-4">Add your first product to get started</p>
+                  <button
+                    onClick={handleShowAddProduct}
+                    className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Product</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {currentFamily.products.map((product) => {
+                    const stats = getProductStats(product.id);
+                    const editedProduct = editedProducts[product.id];
+                    
+                    return (
+                      <div key={product.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-6">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editedProduct?.name || product.name}
+                                  onChange={(e) => handleProductChange(product.id, 'name', e.target.value)}
+                                  className="text-lg font-semibold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1"
+                                />
+                              ) : (
+                                <h4 className="text-lg font-semibold text-slate-900">{product.name}</h4>
+                              )}
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editedProduct?.sku || product.sku}
+                                  onChange={(e) => handleProductChange(product.id, 'sku', e.target.value)}
+                                  className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded border border-slate-300"
+                                  placeholder="SKU"
+                                />
+                              ) : (
+                                <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded">
+                                  {formatValue(product.sku)}
+                                </span>
+                              )}
+                            </div>
+                            
                             {isEditing ? (
-                              <input
-                                type="text"
-                                value={editedProduct?.name || product.name}
-                                onChange={(e) => handleProductChange(product.id, 'name', e.target.value)}
-                                className="text-lg font-semibold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1"
+                              <textarea
+                                value={editedProduct?.description || product.description}
+                                onChange={(e) => handleProductChange(product.id, 'description', e.target.value)}
+                                className="w-full text-slate-600 mb-4 border border-slate-300 rounded px-2 py-1"
+                                rows={2}
                               />
                             ) : (
-                              <h4 className="text-lg font-semibold text-slate-900">{product.name}</h4>
+                              <p className="text-slate-600 mb-4">{product.description}</p>
                             )}
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                value={editedProduct?.sku || product.sku}
-                                onChange={(e) => handleProductChange(product.id, 'sku', e.target.value)}
-                                className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded border border-slate-300"
-                                placeholder="SKU"
-                              />
-                            ) : (
-                              <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded">
-                                {formatValue(product.sku)}
-                              </span>
-                            )}
-                          </div>
-                          
-                          {isEditing ? (
-                            <textarea
-                              value={editedProduct?.description || product.description}
-                              onChange={(e) => handleProductChange(product.id, 'description', e.target.value)}
-                              className="w-full text-slate-600 mb-4 border border-slate-300 rounded px-2 py-1"
-                              rows={2}
-                            />
-                          ) : (
-                            <p className="text-slate-600 mb-4">{product.description}</p>
-                          )}
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
-                            <div className="flex items-center space-x-2">
-                              <DollarSign className="h-5 w-5 text-emerald-600" />
-                              <div>
-                                <div className="text-sm text-slate-500">Average Price</div>
-                                <div className="font-semibold text-slate-900">
-                                  {stats.avgPrice > 0 ? `€${stats.avgPrice.toFixed(2)}` : '-'}
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                              <div className="flex items-center space-x-2">
+                                <DollarSign className="h-5 w-5 text-emerald-600" />
+                                <div>
+                                  <div className="text-sm text-slate-500">Average Price</div>
+                                  <div className="font-semibold text-slate-900">
+                                    {stats.avgPrice > 0 ? `€${stats.avgPrice.toFixed(2)}` : '-'}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Customer Pricing Table */}
-                      {product.customerPrices.length > 0 && (
-                        <div>
-                          <h5 className="font-medium text-slate-900 mb-3">Customer Pricing</h5>
-                          <div className="overflow-x-auto">
-                            <table className="w-full">
-                              <thead className="bg-slate-50">
-                                <tr>
-                                  <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Customer</th>
-                                  <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Type</th>
-                                  <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Price</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-200">
-                                {product.customerPrices.map((cp) => {
-                                  const customer = customers.find(c => c.id === cp.customerId);
-                                  
-                                  return (
-                                    <tr key={cp.customerId}>
-                                      <td className="py-3 px-4">
-                                        <div className="font-medium text-slate-900">{customer?.name || 'Unknown'}</div>
-                                      </td>
-                                      <td className="py-3 px-4">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                          customer?.type === 'OEM' 
-                                            ? 'bg-slate-100 text-slate-800' 
-                                            : customer?.type === 'Agent'
-                                            ? 'bg-emerald-100 text-emerald-800'
-                                            : 'bg-slate-100 text-slate-800'
-                                        }`}>
-                                          {customer?.type || 'Unknown'}
-                                        </span>
-                                      </td>
-                                      <td className="py-3 px-4 font-medium text-emerald-600">€{cp.price.toFixed(2)}</td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
+                        {/* Customer Pricing Table */}
+                        {product.customerPrices.length > 0 && (
+                          <div>
+                            <h5 className="font-medium text-slate-900 mb-3">Customer Pricing</h5>
+                            <div className="overflow-x-auto">
+                              <table className="w-full">
+                                <thead className="bg-slate-50">
+                                  <tr>
+                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Customer</th>
+                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Type</th>
+                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Price</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                  {product.customerPrices.map((cp) => {
+                                    const customer = customers.find(c => c.id === cp.customerId);
+                                    
+                                    return (
+                                      <tr key={cp.customerId}>
+                                        <td className="py-3 px-4">
+                                          <div className="font-medium text-slate-900">{customer?.name || 'Unknown'}</div>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                            customer?.type === 'OEM' 
+                                              ? 'bg-slate-100 text-slate-800' 
+                                              : customer?.type === 'Agent'
+                                              ? 'bg-emerald-100 text-emerald-800'
+                                              : 'bg-slate-100 text-slate-800'
+                                          }`}>
+                                            {customer?.type || 'Unknown'}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-4 font-medium text-emerald-600">€{cp.price.toFixed(2)}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+              <Package className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">No product family selected</h3>
+              <p className="text-slate-600 mb-4">Create a product family to get started</p>
+              <button
+                onClick={() => setShowAddFamily(true)}
+                className="inline-flex items-center space-x-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Family</span>
+              </button>
             </div>
           )}
         </div>
@@ -445,7 +554,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                   value={addFamilyForm.name}
                   onChange={(e) => setAddFamilyForm({ ...addFamilyForm, name: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="Enter family name"
+                  placeholder="e.g., Power Management"
                 />
               </div>
 
@@ -471,7 +580,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                 </button>
                 <button
                   onClick={handleAddFamily}
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  disabled={!addFamilyForm.name.trim()}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
                 >
                   Add Family
                 </button>
@@ -498,6 +608,25 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Product Family Selection */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Product Family *
+                </label>
+                <select
+                  value={addProductForm.familyId}
+                  onChange={(e) => setAddProductForm({ ...addProductForm, familyId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                >
+                  <option value="">Select a family</option>
+                  {productFamilies.map((family) => (
+                    <option key={family.id} value={family.id}>
+                      {family.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Basic Product Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -509,7 +638,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                     value={addProductForm.name}
                     onChange={(e) => setAddProductForm({ ...addProductForm, name: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    placeholder="Enter product name"
+                    placeholder="e.g., Cable"
                   />
                 </div>
 
@@ -522,7 +651,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                     value={addProductForm.sku}
                     onChange={(e) => setAddProductForm({ ...addProductForm, sku: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    placeholder="Enter part number"
+                    placeholder="e.g., CAB-001"
                   />
                 </div>
               </div>
@@ -627,7 +756,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                 </button>
                 <button
                   onClick={handleAddProduct}
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  disabled={!addProductForm.name.trim() || !addProductForm.familyId}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
                 >
                   Add Product
                 </button>

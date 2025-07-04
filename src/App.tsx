@@ -103,6 +103,10 @@ function App() {
     setGlobalTasks(tasks);
   };
 
+  const handleProductFamiliesUpdate = (families: ProductFamily[]) => {
+    setProductFamilies(families);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Navigation currentView={currentView} onViewChange={handleViewChange} />
@@ -139,6 +143,7 @@ function App() {
           <ProductManagement
             productFamilies={productFamilies}
             customers={customers}
+            onProductFamiliesUpdate={handleProductFamiliesUpdate}
           />
         )}
 
