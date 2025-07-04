@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2 } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit } from 'lucide-react';
 import { Customer, Task } from '../types';
 
 interface DashboardProps {
@@ -20,6 +20,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     registrationDate: new Date().toISOString().split('T')[0],
     expiryDate: new Date().toISOString().split('T')[0]
   });
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [expandedOffer, setExpandedOffer] = useState<string | null>(null);
 
   // Get current month start and end dates
   const now = new Date();
@@ -64,7 +66,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     offerName: order.offerName,
     projectName: order.projectName,
     amount: order.amount,
-    accepted: order.paid // Using paid status as accepted status for offers
+    accepted: order.paid, // Using paid status as accepted status for offers
+    finalUser: order.finalUser,
+    ocName: order.ocName
   }));
 
   // Get last 10 offers
@@ -405,38 +409,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                   <th className="text-left py-3 px-6 font-medium text-slate-900">Project</th>
                   <th className="text-left py-3 px-6 font-medium text-slate-900">Amount</th>
                   <th className="text-left py-3 px-6 font-medium text-slate-900">Status</th>
+                  <th className="text-left py-3 px-6 font-medium text-slate-900">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {lastOffers.map((offer) => (
-                  <tr key={`${offer.customerId}-${offer.id}`} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-4 px-6 text-slate-900">
-                      {new Date(offer.date).toLocaleDateString()}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="font-medium text-slate-900">{offer.customerName}</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="font-medium text-slate-900">{offer.offerName}</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="text-slate-900">{offer.projectName}</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="font-semibold text-slate-900">
-                        €{offer.amount.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        offer.accepted 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {offer.accepted ? 'Accepted' : 'Pending'}
-                      </span>
-                    </td>
-                  </tr>
+                  <React.Fragment key={`${offer.customerId}-${offer.id}`}>
+                    <tr className="hover:bg-slate-50 transition-colors">
+                      <td className="py-4 px-6 text-slate-900">
+                        {new Date(offer.date).toLocaleDateString()}
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="font-medium text-slate-900">{offer.customerName}</div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="font-medium text-slate-900">{offer.offerName}</div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="text-slate-900">{offer.projectName}</div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-semibold text-slate-900">
+                          €{offer.amount.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          offer.accepted 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {offer.accepted ? 'Accepted' : 'Pending'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <button
+                          onClick={() => setExpandedOffer(expandedOffer === `${offer.customerId}-${offer.id}` ? null : `${offer.customerId}-${offer.id}`)}
+                          className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>{expandedOffer === `${offer.customerId}-${offer.id}` ? 'Hide' : 'View'}</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedOffer === `${offer.customerId}-${offer.id}` && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-4 bg-slate-50">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-sm font-medium text-slate-700">Final User:</span>
+                              <p className="text-sm text-slate-900">{offer.finalUser}</p>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium text-slate-700">OC Name:</span>
+                              <p className="text-sm text-slate-900">{offer.ocName}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
@@ -448,7 +480,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-6 border-b border-slate-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 sm:mb-0">Last Orders</h3>
+            <div className="flex items-center space-x-2 mb-4 sm:mb-0">
+              <Edit className="h-5 w-5 text-slate-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Last Orders</h3>
+            </div>
             
             <div className="flex flex-wrap gap-3">
               <select
@@ -509,39 +544,67 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                   </div>
                 </th>
                 <th className="text-left py-3 px-6 font-medium text-slate-900">Paid</th>
+                <th className="text-left py-3 px-6 font-medium text-slate-900">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {sortedOrders.map((order) => (
-                <tr key={`${order.customerId}-${order.id}`} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-4 px-6 text-slate-900">
-                    {new Date(order.date).toLocaleDateString()}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="font-medium text-slate-900">{order.customerName}</div>
-                    <div className="text-sm text-slate-500">{order.finalUser}</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="font-medium text-slate-900">{order.projectName}</div>
-                    {order.offerName && (
-                      <div className="text-sm text-slate-500">{order.offerName}</div>
-                    )}
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="font-semibold text-slate-900">
-                      €{order.amount.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      order.paid 
-                        ? 'bg-emerald-100 text-emerald-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {order.paid ? 'Yes' : 'No'}
-                    </span>
-                  </td>
-                </tr>
+                <React.Fragment key={`${order.customerId}-${order.id}`}>
+                  <tr className="hover:bg-slate-50 transition-colors">
+                    <td className="py-4 px-6 text-slate-900">
+                      {new Date(order.date).toLocaleDateString()}
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-medium text-slate-900">{order.customerName}</div>
+                      <div className="text-sm text-slate-500">{order.finalUser}</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-medium text-slate-900">{order.projectName}</div>
+                      {order.offerName && (
+                        <div className="text-sm text-slate-500">{order.offerName}</div>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="font-semibold text-slate-900">
+                        €{order.amount.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        order.paid 
+                          ? 'bg-emerald-100 text-emerald-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {order.paid ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <button
+                        onClick={() => setExpandedOrder(expandedOrder === `${order.customerId}-${order.id}` ? null : `${order.customerId}-${order.id}`)}
+                        className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>{expandedOrder === `${order.customerId}-${order.id}` ? 'Hide' : 'View'}</span>
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedOrder === `${order.customerId}-${order.id}` && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 bg-slate-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-sm font-medium text-slate-700">OC Name:</span>
+                            <p className="text-sm text-slate-900">{order.ocName || '-'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-slate-700">Documents:</span>
+                            <p className="text-sm text-slate-900">{order.documents?.length || 0} files</p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

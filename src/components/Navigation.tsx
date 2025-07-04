@@ -26,7 +26,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChang
               className="hover:opacity-80 transition-opacity"
             >
               <img 
-                src="/Horien_SBS_Logotype_RGB_EnergeticGreen.png" 
+                src="/Bianco_Horien_SBS_Logotype_RGB_EnergeticGreen.png" 
                 alt="Horien Salt Battery Solutions" 
                 className="h-10 w-auto"
               />
