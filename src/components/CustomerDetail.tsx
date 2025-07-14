@@ -3,6 +3,7 @@ import { ArrowLeft, Edit2, Save, X, Trash2, User, Building2, MapPin, CreditCard,
 import { Customer, ProductFamily } from '../types';
 import { ContactsSection } from './ContactsSection';
 import { NotesSection } from './NotesSection';
+import { OffersSection } from './OffersSection';
 import { OrdersSection } from './OrdersSection';
 import { DocumentsSection } from './DocumentsSection';
 import { TasksSection } from './TasksSection';
@@ -25,7 +26,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedCustomer, setEditedCustomer] = useState<Customer>(customer);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'info' | 'contacts' | 'notes' | 'orders' | 'documents' | 'pricing' | 'tasks'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'contacts' | 'notes' | 'offers' | 'orders' | 'documents' | 'pricing' | 'tasks'>('info');
   const [isPricingEditable, setIsPricingEditable] = useState(false);
   const [editedPricing, setEditedPricing] = useState<{[productId: string]: {price: number, discountedPrice: number}}>({});
 
@@ -52,6 +53,11 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
   const handleNotesUpdate = (notes: any[]) => {
     setEditedCustomer({ ...editedCustomer, notes });
     onUpdate({ ...editedCustomer, notes });
+  };
+
+  const handleOffersUpdate = (offers: any[]) => {
+    setEditedCustomer({ ...editedCustomer, offers });
+    onUpdate({ ...editedCustomer, offers });
   };
 
   const handleOrdersUpdate = (orders: any[]) => {
@@ -131,7 +137,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
   };
 
   // Calculate total offers for this customer
-  const totalOffers = (customer.orders || []).filter(order => order.offerName).length;
+  const totalOffers = (customer.offers || []).length;
 
   // Define tabs based on customer type
   const getTabsForCustomerType = () => {
@@ -150,6 +156,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
       ...baseTabs.slice(0, 1), // Information
       { id: 'contacts', label: 'Contacts' },
       ...baseTabs.slice(1, 3), // Notes, Documents
+      { id: 'offers', label: 'Offers' },
       { id: 'orders', label: 'Orders' },
       { id: 'pricing', label: 'Pricing' },
       { id: 'tasks', label: 'Tasks' }
@@ -487,12 +494,12 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                   {customer.type !== 'Agent' && (
                     <>
                       <div>
-                        <dt className="text-sm font-medium text-slate-500">Total Orders</dt>
-                        <dd className="text-sm text-slate-900">{customer.orders?.length || 0}</dd>
+                        <dt className="text-sm font-medium text-slate-500">Total Offers</dt>
+                        <dd className="text-sm text-slate-900">{customer.offers?.length || 0}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-slate-500">Total Offers</dt>
-                        <dd className="text-sm text-slate-900">{totalOffers}</dd>
+                        <dt className="text-sm font-medium text-slate-500">Total Orders</dt>
+                        <dd className="text-sm text-slate-900">{customer.orders?.length || 0}</dd>
                       </div>
                     </>
                   )}
@@ -522,6 +529,14 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
           <NotesSection
             notes={customer.notes || []}
             onNotesUpdate={handleNotesUpdate}
+            isEditing={isEditing}
+          />
+        )}
+
+        {activeTab === 'offers' && customer.type !== 'Agent' && (
+          <OffersSection
+            offers={customer.offers || []}
+            onOffersUpdate={handleOffersUpdate}
             isEditing={isEditing}
           />
         )}
@@ -595,23 +610,23 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                     <table className="w-full">
                       <thead className="bg-slate-50">
                         <tr>
-                          <th className="text-left py-2 px-4 font-medium text-slate-900">Product</th>
-                          <th className="text-left py-2 px-4 font-medium text-slate-900">P/N</th>
-                          <th className="text-left py-2 px-4 font-medium text-slate-900">Standard Price</th>
-                          <th className="text-left py-2 px-4 font-medium text-slate-900">Discounted Price</th>
+                          <th className="text-left py-2 px-4 font-medium text-slate-900 w-1/4">Product</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-1/4">P/N</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-1/4">Standard Price</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-1/4">Discounted Price</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {products.map((product: any) => (
                           <tr key={product.id}>
-                            <td className="py-3 px-4">
+                            <td className="py-3 px-4 w-1/4">
                               <div>
                                 <div className="font-medium text-slate-900">{product.name}</div>
                                 <div className="text-sm text-slate-500">{product.description}</div>
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-slate-900">{formatValue(product.sku)}</td>
-                            <td className="py-3 px-4">
+                            <td className="py-3 px-4 text-center w-1/4 text-slate-900">{formatValue(product.sku)}</td>
+                            <td className="py-3 px-4 text-center w-1/4">
                               {isPricingEditable ? (
                                 <input
                                   type="number"
@@ -625,13 +640,13 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                                       discountedPrice: editedPricing[product.id]?.discountedPrice || product.discountedPrice
                                     }
                                   })}
-                                  className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                  className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent mx-auto"
                                 />
                               ) : (
                                 <span className="font-medium text-slate-900">€{product.customerPrice.toFixed(2)}</span>
                               )}
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-3 px-4 text-center w-1/4">
                               {isPricingEditable ? (
                                 <input
                                   type="number"
@@ -645,7 +660,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                                       discountedPrice: Number(e.target.value)
                                     }
                                   })}
-                                  className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                  className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent mx-auto"
                                 />
                               ) : (
                                 <span className="font-medium text-emerald-600">€{product.discountedPrice.toFixed(2)}</span>

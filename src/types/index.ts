@@ -17,6 +17,7 @@ export interface Customer {
   lastContact: string;
   contacts: Contact[];
   notes: Note[];
+  offers: Offer[];
   orders: Order[];
   documents: Document[];
   tasks: Task[];
@@ -47,6 +48,20 @@ export interface Task {
   completed: boolean;
   createdAt: string;
   urgent?: boolean;
+  veryUrgent?: boolean;
+}
+
+export interface Offer {
+  id: string;
+  date: string;
+  finalUser: string;
+  projectName: string;
+  offerName: string;
+  amount: number;
+  ocName: string;
+  paid: boolean;
+  markedAsOrdered: boolean;
+  documents: OfferDocument[];
 }
 
 export interface Order {
@@ -59,9 +74,18 @@ export interface Order {
   ocName: string;
   paid: boolean;
   documents: OrderDocument[];
+  originalOfferId?: string;
 }
 
 export interface OrderDocument {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+}
+
+export interface OfferDocument {
   id: string;
   name: string;
   type: string;

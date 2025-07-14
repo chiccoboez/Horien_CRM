@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, ShoppingCart, Upload, Download, Eye, X, FolderOpen } from 'lucide-react';
-import { Order, OrderDocument } from '../types';
+import { Plus, Edit2, Trash2, FileText, Upload, Download, Eye, X, FolderOpen, CheckSquare } from 'lucide-react';
+import { Offer, OfferDocument } from '../types';
 
-interface OrdersSectionProps {
-  orders: Order[];
-  onOrdersUpdate: (orders: Order[]) => void;
+interface OffersSectionProps {
+  offers: Offer[];
+  onOffersUpdate: (offers: Offer[]) => void;
   isEditing: boolean;
 }
 
 interface FolderStructure {
-  [key: string]: OrderDocument[];
+  [key: string]: OfferDocument[];
 }
 
-export const OrdersSection: React.FC<OrdersSectionProps> = ({
-  orders,
-  onOrdersUpdate,
+export const OffersSection: React.FC<OffersSectionProps> = ({
+  offers,
+  onOffersUpdate,
   isEditing
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     finalUser: '',
@@ -28,61 +28,71 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
     ocName: '',
     paid: 'No'
   });
-  const [folderStructures, setFolderStructures] = useState<{[orderId: string]: FolderStructure}>({});
+  const [folderStructures, setFolderStructures] = useState<{[offerId: string]: FolderStructure}>({});
   const [expandedFolders, setExpandedFolders] = useState<{[key: string]: boolean}>({});
 
-  const handleAddOrder = () => {
+  const handleAddOffer = () => {
     if (formData.finalUser.trim() && formData.projectName.trim()) {
-      const newOrder: Order = {
+      const newOffer: Offer = {
         id: Date.now().toString(),
         ...formData,
         paid: formData.paid === 'Yes',
+        markedAsOrdered: false,
         documents: []
       };
-      onOrdersUpdate([newOrder, ...orders]);
+      onOffersUpdate([newOffer, ...offers]);
       resetForm();
     }
   };
 
-  const handleEditOrder = (order: Order) => {
-    setEditingOrder(order);
+  const handleEditOffer = (offer: Offer) => {
+    setEditingOffer(offer);
     setFormData({
-      date: order.date,
-      finalUser: order.finalUser,
-      projectName: order.projectName,
-      offerName: order.offerName,
-      amount: order.amount,
-      ocName: order.ocName,
-      paid: order.paid ? 'Yes' : 'No'
+      date: offer.date,
+      finalUser: offer.finalUser,
+      projectName: offer.projectName,
+      offerName: offer.offerName,
+      amount: offer.amount,
+      ocName: offer.ocName,
+      paid: offer.paid ? 'Yes' : 'No'
     });
   };
 
-  const handleUpdateOrder = () => {
-    if (editingOrder && formData.finalUser.trim() && formData.projectName.trim()) {
-      const updatedOrders = orders.map(o =>
-        o.id === editingOrder.id
-          ? { ...editingOrder, ...formData, paid: formData.paid === 'Yes' }
+  const handleUpdateOffer = () => {
+    if (editingOffer && formData.finalUser.trim() && formData.projectName.trim()) {
+      const updatedOffers = offers.map(o =>
+        o.id === editingOffer.id
+          ? { ...editingOffer, ...formData, paid: formData.paid === 'Yes' }
           : o
       );
-      onOrdersUpdate(updatedOrders);
-      setEditingOrder(null);
+      onOffersUpdate(updatedOffers);
+      setEditingOffer(null);
       resetForm();
     }
   };
 
-  const handleDeleteOrder = (orderId: string) => {
-    onOrdersUpdate(orders.filter(o => o.id !== orderId));
-    // Clean up folder structures for deleted order
+  const handleDeleteOffer = (offerId: string) => {
+    onOffersUpdate(offers.filter(o => o.id !== offerId));
+    // Clean up folder structures for deleted offer
     const newFolderStructures = { ...folderStructures };
-    delete newFolderStructures[orderId];
+    delete newFolderStructures[offerId];
     setFolderStructures(newFolderStructures);
   };
 
-  const handleFileUpload = (orderId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMarkAsOrdered = (offerId: string) => {
+    const updatedOffers = offers.map(offer =>
+      offer.id === offerId
+        ? { ...offer, markedAsOrdered: !offer.markedAsOrdered }
+        : offer
+    );
+    onOffersUpdate(updatedOffers);
+  };
+
+  const handleFileUpload = (offerId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      const newDocument: OrderDocument = {
+      const newDocument: OfferDocument = {
         id: Date.now().toString(),
         name: file.name,
         type: file.type,
@@ -90,19 +100,19 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
         url: URL.createObjectURL(file)
       };
 
-      const updatedOrders = orders.map(order =>
-        order.id === orderId
-          ? { ...order, documents: [...order.documents, newDocument] }
-          : order
+      const updatedOffers = offers.map(offer =>
+        offer.id === offerId
+          ? { ...offer, documents: [...offer.documents, newDocument] }
+          : offer
       );
-      onOrdersUpdate(updatedOrders);
+      onOffersUpdate(updatedOffers);
     }
   };
 
-  const handleFolderUpload = (orderId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFolderUpload = (offerId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const newFolderStructure: FolderStructure = { ...folderStructures[orderId] || {} };
+      const newFolderStructure: FolderStructure = { ...folderStructures[offerId] || {} };
       
       Array.from(files).forEach(file => {
         const relativePath = file.webkitRelativePath || file.name;
@@ -113,7 +123,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
           newFolderStructure[folderName] = [];
         }
         
-        const newDocument: OrderDocument = {
+        const newDocument: OfferDocument = {
           id: `${Date.now()}-${Math.random()}`,
           name: file.name,
           type: file.type,
@@ -126,50 +136,50 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
       
       setFolderStructures({
         ...folderStructures,
-        [orderId]: newFolderStructure
+        [offerId]: newFolderStructure
       });
     }
   };
 
-  const handleDeleteDocument = (orderId: string, documentId: string) => {
-    const updatedOrders = orders.map(order =>
-      order.id === orderId
-        ? { ...order, documents: order.documents.filter(doc => doc.id !== documentId) }
-        : order
+  const handleDeleteDocument = (offerId: string, documentId: string) => {
+    const updatedOffers = offers.map(offer =>
+      offer.id === offerId
+        ? { ...offer, documents: offer.documents.filter(doc => doc.id !== documentId) }
+        : offer
     );
-    onOrdersUpdate(updatedOrders);
+    onOffersUpdate(updatedOffers);
   };
 
-  const handleDeleteFolder = (orderId: string, folderName: string) => {
+  const handleDeleteFolder = (offerId: string, folderName: string) => {
     const newFolderStructures = { ...folderStructures };
-    if (newFolderStructures[orderId]) {
-      delete newFolderStructures[orderId][folderName];
-      if (Object.keys(newFolderStructures[orderId]).length === 0) {
-        delete newFolderStructures[orderId];
+    if (newFolderStructures[offerId]) {
+      delete newFolderStructures[offerId][folderName];
+      if (Object.keys(newFolderStructures[offerId]).length === 0) {
+        delete newFolderStructures[offerId];
       }
     }
     setFolderStructures(newFolderStructures);
     
     // Remove from expanded folders
-    const folderKey = `${orderId}-${folderName}`;
+    const folderKey = `${offerId}-${folderName}`;
     const newExpandedFolders = { ...expandedFolders };
     delete newExpandedFolders[folderKey];
     setExpandedFolders(newExpandedFolders);
   };
 
-  const handleDeleteFolderFile = (orderId: string, folderName: string, fileId: string) => {
+  const handleDeleteFolderFile = (offerId: string, folderName: string, fileId: string) => {
     const newFolderStructures = { ...folderStructures };
-    if (newFolderStructures[orderId] && newFolderStructures[orderId][folderName]) {
-      newFolderStructures[orderId][folderName] = newFolderStructures[orderId][folderName].filter(file => file.id !== fileId);
+    if (newFolderStructures[offerId] && newFolderStructures[offerId][folderName]) {
+      newFolderStructures[offerId][folderName] = newFolderStructures[offerId][folderName].filter(file => file.id !== fileId);
       
-      if (newFolderStructures[orderId][folderName].length === 0) {
-        delete newFolderStructures[orderId][folderName];
-        if (Object.keys(newFolderStructures[orderId]).length === 0) {
-          delete newFolderStructures[orderId];
+      if (newFolderStructures[offerId][folderName].length === 0) {
+        delete newFolderStructures[offerId][folderName];
+        if (Object.keys(newFolderStructures[offerId]).length === 0) {
+          delete newFolderStructures[offerId];
         }
         
         // Remove from expanded folders
-        const folderKey = `${orderId}-${folderName}`;
+        const folderKey = `${offerId}-${folderName}`;
         const newExpandedFolders = { ...expandedFolders };
         delete newExpandedFolders[folderKey];
         setExpandedFolders(newExpandedFolders);
@@ -178,8 +188,8 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
     setFolderStructures(newFolderStructures);
   };
 
-  const toggleFolder = (orderId: string, folderName: string) => {
-    const folderKey = `${orderId}-${folderName}`;
+  const toggleFolder = (offerId: string, folderName: string) => {
+    const folderKey = `${offerId}-${folderName}`;
     setExpandedFolders(prev => ({
       ...prev,
       [folderKey]: !prev[folderKey]
@@ -197,17 +207,19 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
       paid: 'No'
     });
     setShowAddForm(false);
-    setEditingOrder(null);
+    setEditingOffer(null);
   };
 
-  const sortedOrders = [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Filter out offers that are marked as ordered
+  const activeOffers = offers.filter(offer => !offer.markedAsOrdered);
+  const sortedOffers = [...activeOffers].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-          <ShoppingCart className="h-5 w-5" />
-          <span>Orders</span>
+          <FileText className="h-5 w-5" />
+          <span>Offers</span>
         </h2>
         {isEditing && (
           <button
@@ -215,19 +227,19 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
             className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Order</span>
+            <span>Add Offer</span>
           </button>
         )}
       </div>
 
-      {sortedOrders.length === 0 && !showAddForm && (
-        <p className="text-slate-500 text-center py-4">No orders recorded yet</p>
+      {sortedOffers.length === 0 && !showAddForm && (
+        <p className="text-slate-500 text-center py-4">No offers recorded yet</p>
       )}
 
       <div className="space-y-4">
         {showAddForm && (
           <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-            <h4 className="font-medium text-slate-900 mb-3">Add New Order</h4>
+            <h4 className="font-medium text-slate-900 mb-3">Add New Offer</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 type="date"
@@ -281,10 +293,10 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
             </div>
             <div className="flex space-x-2 mt-3">
               <button
-                onClick={handleAddOrder}
+                onClick={handleAddOffer}
                 className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
               >
-                Add Order
+                Add Offer
               </button>
               <button
                 onClick={resetForm}
@@ -296,9 +308,9 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
           </div>
         )}
 
-        {sortedOrders.map((order) => (
-          <div key={order.id} className="border border-slate-200 rounded-lg p-4">
-            {editingOrder?.id === order.id ? (
+        {sortedOffers.map((offer) => (
+          <div key={offer.id} className="border border-slate-200 rounded-lg p-4">
+            {editingOffer?.id === offer.id ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input
@@ -353,7 +365,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={handleUpdateOrder}
+                    onClick={handleUpdateOffer}
                     className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
                   >
                     Save
@@ -370,23 +382,36 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-4">
-                    <span className="text-sm text-slate-500">{new Date(order.date).toLocaleDateString()}</span>
+                    <span className="text-sm text-slate-500">{new Date(offer.date).toLocaleDateString()}</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      order.paid ? 'bg-emerald-100 text-emerald-800' : 'bg-yellow-100 text-yellow-800'
+                      offer.paid ? 'bg-emerald-100 text-emerald-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {order.paid ? 'Paid' : 'Pending'}
+                      {offer.paid ? 'Paid' : 'Pending'}
                     </span>
+                    {isEditing && (
+                      <button
+                        onClick={() => handleMarkAsOrdered(offer.id)}
+                        className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                          offer.markedAsOrdered
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        <CheckSquare className="h-3 w-3" />
+                        <span>Mark as Ordered</span>
+                      </button>
+                    )}
                   </div>
                   {isEditing && (
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleEditOrder(order)}
+                        onClick={() => handleEditOffer(offer)}
                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteOrder(order.id)}
+                        onClick={() => handleDeleteOffer(offer.id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -398,28 +423,28 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <span className="text-sm font-medium text-slate-700">Final User:</span>
-                    <span className="ml-2 text-slate-900">{order.finalUser}</span>
+                    <span className="ml-2 text-slate-900">{offer.finalUser}</span>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-slate-700">Project:</span>
-                    <span className="ml-2 text-slate-900">{order.projectName}</span>
+                    <span className="ml-2 text-slate-900">{offer.projectName}</span>
                   </div>
-                  {order.offerName && (
+                  {offer.offerName && (
                     <div>
                       <span className="text-sm font-medium text-slate-700">Offer:</span>
-                      <span className="ml-2 text-slate-900">{order.offerName}</span>
+                      <span className="ml-2 text-slate-900">{offer.offerName}</span>
                     </div>
                   )}
-                  {order.amount > 0 && (
+                  {offer.amount > 0 && (
                     <div>
                       <span className="text-sm font-medium text-slate-700">Amount:</span>
-                      <span className="ml-2 text-slate-900">€{order.amount.toLocaleString()}</span>
+                      <span className="ml-2 text-slate-900">€{offer.amount.toLocaleString()}</span>
                     </div>
                   )}
-                  {order.ocName && (
+                  {offer.ocName && (
                     <div>
                       <span className="text-sm font-medium text-slate-700">OC:</span>
-                      <span className="ml-2 text-slate-900">{order.ocName}</span>
+                      <span className="ml-2 text-slate-900">{offer.ocName}</span>
                     </div>
                   )}
                 </div>
@@ -436,7 +461,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                           <input
                             type="file"
                             className="hidden"
-                            onChange={(e) => handleFileUpload(order.id, e)}
+                            onChange={(e) => handleFileUpload(offer.id, e)}
                           />
                         </label>
                         <label className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 cursor-pointer text-sm">
@@ -447,7 +472,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                             multiple
                             webkitdirectory=""
                             className="hidden"
-                            onChange={(e) => handleFolderUpload(order.id, e)}
+                            onChange={(e) => handleFolderUpload(offer.id, e)}
                           />
                         </label>
                       </div>
@@ -455,19 +480,19 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                   </div>
                   
                   {/* Folder Structure */}
-                  {folderStructures[order.id] && Object.keys(folderStructures[order.id]).length > 0 && (
+                  {folderStructures[offer.id] && Object.keys(folderStructures[offer.id]).length > 0 && (
                     <div className="mb-3">
                       <h6 className="text-xs font-medium text-slate-600 mb-2">Folders:</h6>
                       <div className="space-y-2">
-                        {Object.entries(folderStructures[order.id]).map(([folderName, files]) => {
-                          const folderKey = `${order.id}-${folderName}`;
+                        {Object.entries(folderStructures[offer.id]).map(([folderName, files]) => {
+                          const folderKey = `${offer.id}-${folderName}`;
                           const isExpanded = expandedFolders[folderKey];
                           
                           return (
                             <div key={folderName} className="border border-slate-200 rounded">
                               <div className="flex items-center justify-between p-2 bg-slate-50 rounded-t">
                                 <button
-                                  onClick={() => toggleFolder(order.id, folderName)}
+                                  onClick={() => toggleFolder(offer.id, folderName)}
                                   className="flex items-center space-x-2 text-slate-900 hover:text-slate-700"
                                 >
                                   <FolderOpen className="h-4 w-4 text-emerald-600" />
@@ -479,7 +504,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                                 </button>
                                 {isEditing && (
                                   <button
-                                    onClick={() => handleDeleteFolder(order.id, folderName)}
+                                    onClick={() => handleDeleteFolder(offer.id, folderName)}
                                     className="p-1 text-red-600 hover:bg-red-100 rounded"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -508,7 +533,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                                         </a>
                                         {isEditing && (
                                           <button
-                                            onClick={() => handleDeleteFolderFile(order.id, folderName, file.id)}
+                                            onClick={() => handleDeleteFolderFile(offer.id, folderName, file.id)}
                                             className="p-1 text-red-600 hover:bg-red-100 rounded"
                                           >
                                             <X className="h-3 w-3" />
@@ -527,14 +552,14 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                   )}
 
                   {/* Individual Files */}
-                  {order.documents.length === 0 && (!folderStructures[order.id] || Object.keys(folderStructures[order.id]).length === 0) ? (
+                  {offer.documents.length === 0 && (!folderStructures[offer.id] || Object.keys(folderStructures[offer.id]).length === 0) ? (
                     <p className="text-sm text-slate-500">No documents uploaded</p>
                   ) : (
-                    order.documents.length > 0 && (
+                    offer.documents.length > 0 && (
                       <div>
                         <h6 className="text-xs font-medium text-slate-600 mb-2">Files:</h6>
                         <div className="space-y-2">
-                          {order.documents.map((doc) => (
+                          {offer.documents.map((doc) => (
                             <div key={doc.id} className="flex items-center justify-between bg-slate-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
                                 <span className="text-sm text-slate-900">{doc.name}</span>
@@ -556,7 +581,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                                 </a>
                                 {isEditing && (
                                   <button
-                                    onClick={() => handleDeleteDocument(order.id, doc.id)}
+                                    onClick={() => handleDeleteDocument(offer.id, doc.id)}
                                     className="p-1 text-red-600 hover:bg-red-100 rounded"
                                   >
                                     <X className="h-4 w-4" />
