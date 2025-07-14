@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle, Check } from 'lucide-react';
 import { Customer, Task } from '../types';
 
 interface DashboardProps {
@@ -19,7 +19,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     description: '',
     registrationDate: new Date().toISOString().split('T')[0],
     expiryDate: new Date().toISOString().split('T')[0],
-    urgent: false
+    urgent: false,
+    veryUrgent: false
   });
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [expandedOffer, setExpandedOffer] = useState<string | null>(null);
@@ -29,14 +30,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  // Collect all orders from all customers
-  const allOrders = customers.flatMap(customer => 
-    (customer.orders || []).map(order => ({
+  // Collect all offers from all customers (not marked as ordered)
+  const allOffers = customers.flatMap(customer => 
+    (customer.offers || [])
+      .filter(offer => !offer.markedAsOrdered)
+      .map(offer => ({
+        ...offer,
+        customerName: customer.name,
+        customerId: customer.id
+      }))
+  );
+
+  // Collect all orders from all customers (offers marked as ordered + actual orders)
+  const allOrders = customers.flatMap(customer => {
+    const orderedOffers = (customer.offers || [])
+      .filter(offer => offer.markedAsOrdered)
+      .map(offer => ({
+        id: offer.id,
+        date: offer.date,
+        finalUser: offer.finalUser,
+        projectName: offer.projectName,
+        offerName: offer.offerName,
+        amount: offer.amount,
+        ocName: offer.ocName,
+        paid: offer.paid,
+        documents: offer.documents || [],
+        customerName: customer.name,
+        customerId: customer.id
+      }));
+    
+    const actualOrders = (customer.orders || []).map(order => ({
       ...order,
       customerName: customer.name,
       customerId: customer.id
-    }))
-  );
+    }));
+    
+    return [...orderedOffers, ...actualOrders];
+  });
 
   // Collect all tasks from all customers
   const allCustomerTasks = customers.flatMap(customer => 
@@ -58,20 +88,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 10);
 
-  // Collect all offers (using offerName from orders as offers)
-  const allOffers = allOrders.filter(order => order.offerName).map(order => ({
-    id: order.id,
-    date: order.date,
-    customerName: order.customerName,
-    customerId: order.customerId,
-    offerName: order.offerName,
-    projectName: order.projectName,
-    amount: order.amount,
-    accepted: order.paid, // Using paid status as accepted status for offers
-    finalUser: order.finalUser,
-    ocName: order.ocName
-  }));
-
   // Get last 10 offers
   const lastOffers = [...allOffers]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -81,7 +97,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
   const upcomingTasks = [...allTasks]
     .filter(task => !task.completed)
     .sort((a, b) => {
-      // Urgent tasks first
+      // Very urgent tasks first
+      if (a.veryUrgent !== b.veryUrgent) {
+        return a.veryUrgent ? -1 : 1;
+      }
+      // Then urgent tasks
       if (a.urgent !== b.urgent) {
         return a.urgent ? -1 : 1;
       }
@@ -155,7 +175,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
         expiryDate: globalTaskForm.expiryDate,
         completed: false,
         createdAt: new Date().toISOString(),
-        urgent: globalTaskForm.urgent
+        urgent: globalTaskForm.urgent,
+        veryUrgent: globalTaskForm.veryUrgent
       };
       onGlobalTasksUpdate([newTask, ...globalTasks]);
       setGlobalTaskForm({
@@ -163,15 +184,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
         description: '',
         registrationDate: new Date().toISOString().split('T')[0],
         expiryDate: new Date().toISOString().split('T')[0],
-        urgent: false
+        urgent: false,
+        veryUrgent: false
       });
       setShowAddGlobalTask(false);
     }
   };
 
-  const handleDeleteTask = (taskId: string, isGlobal: boolean) => {
+  const handleCompleteTask = (taskId: string, isGlobal: boolean) => {
     if (isGlobal) {
-      onGlobalTasksUpdate(globalTasks.filter(task => task.id !== taskId));
+      const updatedTasks = globalTasks.map(task =>
+        task.id === taskId ? { ...task, completed: true } : task
+      );
+      onGlobalTasksUpdate(updatedTasks);
     }
     // For customer tasks, we would need to update the specific customer
     // This would require additional props and handlers
@@ -294,17 +319,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                 rows={3}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="urgent-global"
-                  checked={globalTaskForm.urgent}
-                  onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, urgent: e.target.checked })}
-                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded"
-                />
-                <label htmlFor="urgent-global" className="text-sm font-medium text-slate-700">
-                  Mark as urgent
-                </label>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="urgent-global"
+                    checked={globalTaskForm.urgent}
+                    onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, urgent: e.target.checked })}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-slate-300 rounded"
+                  />
+                  <label htmlFor="urgent-global" className="text-sm font-medium text-slate-700">
+                    Mark as urgent
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="very-urgent-global"
+                    checked={globalTaskForm.veryUrgent}
+                    onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, veryUrgent: e.target.checked })}
+                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded"
+                  />
+                  <label htmlFor="very-urgent-global" className="text-sm font-medium text-slate-700">
+                    Mark as very urgent
+                  </label>
+                </div>
               </div>
               <div className="flex space-x-2">
                 <button
@@ -347,13 +386,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-2">
-                        {task.urgent && (
+                        {task.veryUrgent && (
                           <div className="flex items-center space-x-1 text-red-600">
                             <AlertTriangle className="h-4 w-4 fill-current" />
                             <span className="text-xs font-medium">!</span>
                           </div>
                         )}
-                        <div className={`font-medium ${task.urgent ? 'text-red-900' : 'text-slate-900'}`}>
+                        {task.urgent && !task.veryUrgent && (
+                          <div className="flex items-center space-x-1 text-orange-600">
+                            <AlertTriangle className="h-4 w-4 fill-current" />
+                            <span className="text-xs font-medium">!</span>
+                          </div>
+                        )}
+                        <div className={`font-medium ${
+                          task.veryUrgent ? 'text-red-900' : 
+                          task.urgent ? 'text-orange-900' : 'text-slate-900'
+                        }`}>
                           {task.title}
                         </div>
                       </div>
@@ -363,8 +411,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-2">
-                        {task.urgent && (
+                        {task.veryUrgent && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Very Urgent
+                          </span>
+                        )}
+                        {task.urgent && !task.veryUrgent && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                             Urgent
                           </span>
                         )}
@@ -389,10 +442,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                           <span>{expandedTask === `${task.customerId}-${task.id}` ? 'Hide' : 'View'}</span>
                         </button>
                         <button
-                          onClick={() => handleDeleteTask(task.id, task.customerId === 'global')}
-                          className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                          onClick={() => handleCompleteTask(task.id, task.customerId === 'global')}
+                          className="p-1 text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
+                          title="Mark as completed"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Check className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
@@ -474,11 +528,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                       </td>
                       <td className="py-4 px-6">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          offer.accepted 
+                          offer.paid 
                             ? 'bg-emerald-100 text-emerald-800' 
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {offer.accepted ? 'Accepted' : 'Pending'}
+                          {offer.paid ? 'Paid' : 'Pending'}
                         </span>
                       </td>
                       <td className="py-4 px-6">
@@ -654,7 +708,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
             <BarChart3 className="mx-auto h-12 w-12 text-slate-400" />
             <h3 className="mt-2 text-sm font-medium text-slate-900">No orders found</h3>
             <p className="mt-1 text-sm text-slate-500">
-              {filterPaid !== 'all' ? 'Try adjusting your filter criteria.' : 'Orders will appear here once customers place them.'}
+              {filterPaid !== 'all' ? 'Try adjusting your filter criteria.' : 'Orders will appear here once offers are marked as ordered.'}
             </p>
           </div>
         )}

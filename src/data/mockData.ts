@@ -20,7 +20,7 @@ export const mockCustomers: Customer[] = [
     lastContact: '2024-01-20',
     contacts: [],
     notes: [],
-    orders: [
+    offers: [
       {
         id: '1',
         date: '2024-01-15',
@@ -30,6 +30,7 @@ export const mockCustomers: Customer[] = [
         amount: 15000,
         ocName: 'John Smith',
         paid: true,
+        markedAsOrdered: false,
         documents: []
       },
       {
@@ -41,9 +42,11 @@ export const mockCustomers: Customer[] = [
         amount: 25000,
         ocName: 'Jane Doe',
         paid: false,
+        markedAsOrdered: false,
         documents: []
       }
     ],
+    orders: [],
     documents: [],
     tasks: [
       {
@@ -54,7 +57,8 @@ export const mockCustomers: Customer[] = [
         expiryDate: '2024-02-15',
         completed: false,
         createdAt: '2024-01-15T10:00:00Z',
-        urgent: true
+        urgent: true,
+        veryUrgent: false
       }
     ]
   },
@@ -77,7 +81,7 @@ export const mockCustomers: Customer[] = [
     lastContact: '2024-01-18',
     contacts: [],
     notes: [],
-    orders: [
+    offers: [
       {
         id: '3',
         date: '2024-01-18',
@@ -87,9 +91,11 @@ export const mockCustomers: Customer[] = [
         amount: 8500,
         ocName: 'Mike Johnson',
         paid: true,
+        markedAsOrdered: true,
         documents: []
       }
     ],
+    orders: [],
     documents: [],
     tasks: [
       {
@@ -99,7 +105,9 @@ export const mockCustomers: Customer[] = [
         registrationDate: '2024-01-10',
         expiryDate: '2024-01-25',
         completed: true,
-        createdAt: '2024-01-10T14:00:00Z'
+        createdAt: '2024-01-10T14:00:00Z',
+        urgent: false,
+        veryUrgent: false
       }
     ]
   },
@@ -122,7 +130,7 @@ export const mockCustomers: Customer[] = [
     lastContact: '2024-01-19',
     contacts: [],
     notes: [],
-    orders: [
+    offers: [
       {
         id: '4',
         date: '2024-01-19',
@@ -132,9 +140,11 @@ export const mockCustomers: Customer[] = [
         amount: 35000,
         ocName: 'Sarah Wilson',
         paid: false,
+        markedAsOrdered: false,
         documents: []
       }
     ],
+    orders: [],
     documents: [],
     tasks: [
       {
@@ -145,7 +155,8 @@ export const mockCustomers: Customer[] = [
         expiryDate: '2024-02-05',
         completed: false,
         createdAt: '2024-01-19T09:00:00Z',
-        urgent: false
+        urgent: false,
+        veryUrgent: true
       }
     ]
   },
@@ -168,7 +179,7 @@ export const mockCustomers: Customer[] = [
     lastContact: '2024-01-17',
     contacts: [],
     notes: [],
-    orders: [
+    offers: [
       {
         id: '5',
         date: '2024-01-17',
@@ -178,9 +189,11 @@ export const mockCustomers: Customer[] = [
         amount: 12000,
         ocName: 'David Brown',
         paid: true,
+        markedAsOrdered: false,
         documents: []
       }
     ],
+    orders: [],
     documents: [],
     tasks: []
   }

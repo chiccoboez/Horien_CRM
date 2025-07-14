@@ -136,9 +136,6 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
     return value && value.trim() !== '' ? value : '-';
   };
 
-  // Calculate total offers for this customer
-  const totalOffers = (customer.offers || []).length;
-
   // Define tabs based on customer type
   const getTabsForCustomerType = () => {
     const baseTabs = [
@@ -610,23 +607,25 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                     <table className="w-full">
                       <thead className="bg-slate-50">
                         <tr>
-                          <th className="text-left py-2 px-4 font-medium text-slate-900 w-1/4">Product</th>
-                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-1/4">P/N</th>
-                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-1/4">Standard Price</th>
-                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-1/4">Discounted Price</th>
+                          <th className="text-left py-2 px-4 font-medium text-slate-900">Product</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-32">P/N</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-32">Standard Price</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-32">Discounted Price</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {products.map((product: any) => (
                           <tr key={product.id}>
-                            <td className="py-3 px-4 w-1/4">
+                            <td className="py-3 px-4">
                               <div>
                                 <div className="font-medium text-slate-900">{product.name}</div>
                                 <div className="text-sm text-slate-500">{product.description}</div>
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-center w-1/4 text-slate-900">{formatValue(product.sku)}</td>
-                            <td className="py-3 px-4 text-center w-1/4">
+                            <td className="py-3 px-4 text-center w-32">
+                              <span className="text-slate-900">{formatValue(product.sku)}</span>
+                            </td>
+                            <td className="py-3 px-4 text-center w-32">
                               {isPricingEditable ? (
                                 <input
                                   type="number"
@@ -646,7 +645,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                                 <span className="font-medium text-slate-900">€{product.customerPrice.toFixed(2)}</span>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-center w-1/4">
+                            <td className="py-3 px-4 text-center w-32">
                               {isPricingEditable ? (
                                 <input
                                   type="number"
