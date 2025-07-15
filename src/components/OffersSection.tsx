@@ -388,19 +388,13 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                     }`}>
                       {offer.paid ? 'Paid' : 'Pending'}
                     </span>
-                    {isEditing && (
-                      <button
-                        onClick={() => handleMarkAsOrdered(offer.id)}
-                        className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                          offer.markedAsOrdered
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        <CheckSquare className="h-3 w-3" />
-                        <span>Mark as Ordered</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleMarkAsOrdered(offer.id)}
+                      className="inline-flex items-center space-x-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                    >
+                      <CheckSquare className="h-3 w-3" />
+                      <span>Mark as Ordered</span>
+                    </button>
                   </div>
                   {isEditing && (
                     <div className="flex space-x-2">

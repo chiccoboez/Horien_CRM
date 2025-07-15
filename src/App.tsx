@@ -64,6 +64,7 @@ function App() {
       ...newCustomer,
       contacts: newCustomer.contacts || [],
       notes: newCustomer.notes || [],
+      offers: newCustomer.offers || [],
       orders: newCustomer.orders || [],
       documents: newCustomer.documents || [],
       tasks: newCustomer.tasks || []
@@ -86,6 +87,7 @@ function App() {
       ...customer,
       contacts: customer.contacts || [],
       notes: customer.notes || [],
+      offers: customer.offers || [],
       orders: customer.orders || [],
       documents: customer.documents || [],
       tasks: customer.tasks || []
@@ -117,6 +119,7 @@ function App() {
             customers={customers} 
             globalTasks={globalTasks}
             onGlobalTasksUpdate={handleGlobalTasksUpdate}
+            onCustomerUpdate={handleCustomerUpdate}
           />
         )}
         

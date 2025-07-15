@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle, Check } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle, Check, CheckSquare } from 'lucide-react';
 import { Customer, Task } from '../types';
 
 interface DashboardProps {
   customers: Customer[];
   globalTasks: Task[];
   onGlobalTasksUpdate: (tasks: Task[]) => void;
+  onCustomerUpdate?: (customer: Customer) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, onGlobalTasksUpdate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ 
+  customers, 
+  globalTasks, 
+  onGlobalTasksUpdate,
+  onCustomerUpdate 
+}) => {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'customer'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterPaid, setFilterPaid] = useState<'all' | 'paid' | 'unpaid'>('all');
@@ -191,22 +197,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
     }
   };
 
-  const handleCompleteTask = (taskId: string, isGlobal: boolean) => {
-    if (isGlobal) {
+  const handleCompleteTask = (taskId: string, customerId: string) => {
+    if (customerId === 'global') {
+      // Handle global tasks
       const updatedTasks = globalTasks.map(task =>
         task.id === taskId ? { ...task, completed: true } : task
       );
       onGlobalTasksUpdate(updatedTasks);
+    } else {
+      // Handle customer tasks
+      if (onCustomerUpdate) {
+        const customer = customers.find(c => c.id === customerId);
+        if (customer) {
+          const updatedTasks = (customer.tasks || []).map(task =>
+            task.id === taskId ? { ...task, completed: true } : task
+          );
+          onCustomerUpdate({ ...customer, tasks: updatedTasks });
+        }
+      }
     }
-    // For customer tasks, we would need to update the specific customer
-    // This would require additional props and handlers
   };
 
-  const handleDeleteAllTasks = () => {
-    if (window.confirm('Are you sure you want to delete all tasks? This action cannot be undone.')) {
-      onGlobalTasksUpdate([]);
-      // Note: This only deletes global tasks. Customer tasks would need additional handling
-      alert('All global tasks have been deleted. Customer-specific tasks remain unchanged.');
+  const handleMarkOfferAsOrdered = (offerId: string, customerId: string) => {
+    if (onCustomerUpdate) {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        const updatedOffers = (customer.offers || []).map(offer =>
+          offer.id === offerId ? { ...offer, markedAsOrdered: true } : offer
+        );
+        onCustomerUpdate({ ...customer, offers: updatedOffers });
+      }
     }
   };
 
@@ -221,8 +241,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-emerald-100 rounded-lg">
-              <FileText className="h-6 w-6 text-emerald-600" />
+            <div className="p-2 bg-slate-100 rounded-lg">
+              <FileText className="h-6 w-6 text-slate-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-slate-600">Offers This Month</p>
@@ -261,15 +281,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
               <h3 className="text-lg font-semibold text-slate-900">Tasks</h3>
             </div>
             <div className="flex items-center space-x-3">
-              {upcomingTasks.length > 0 && (
-                <button
-                  onClick={handleDeleteAllTasks}
-                  className="inline-flex items-center space-x-2 bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-sm"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span>Delete All</span>
-                </button>
-              )}
               <button
                 onClick={() => setShowAddGlobalTask(true)}
                 className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
@@ -387,16 +398,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-2">
                         {task.veryUrgent && (
-                          <div className="flex items-center space-x-1 text-red-600">
-                            <AlertTriangle className="h-4 w-4 fill-current" />
-                            <span className="text-xs font-medium">!</span>
-                          </div>
+                          <AlertTriangle className="h-4 w-4 text-red-600 fill-current" />
                         )}
                         {task.urgent && !task.veryUrgent && (
-                          <div className="flex items-center space-x-1 text-orange-600">
-                            <AlertTriangle className="h-4 w-4 fill-current" />
-                            <span className="text-xs font-medium">!</span>
-                          </div>
+                          <AlertTriangle className="h-4 w-4 text-orange-600 fill-current" />
                         )}
                         <div className={`font-medium ${
                           task.veryUrgent ? 'text-red-900' : 
@@ -442,7 +447,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                           <span>{expandedTask === `${task.customerId}-${task.id}` ? 'Hide' : 'View'}</span>
                         </button>
                         <button
-                          onClick={() => handleCompleteTask(task.id, task.customerId === 'global')}
+                          onClick={() => handleCompleteTask(task.id, task.customerId)}
                           className="p-1 text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
                           title="Mark as completed"
                         >
@@ -536,13 +541,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ customers, globalTasks, on
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <button
-                          onClick={() => setExpandedOffer(expandedOffer === `${offer.customerId}-${offer.id}` ? null : `${offer.customerId}-${offer.id}`)}
-                          className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span>{expandedOffer === `${offer.customerId}-${offer.id}` ? 'Hide' : 'View'}</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => setExpandedOffer(expandedOffer === `${offer.customerId}-${offer.id}` ? null : `${offer.customerId}-${offer.id}`)}
+                            className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span>{expandedOffer === `${offer.customerId}-${offer.id}` ? 'Hide' : 'View'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleMarkOfferAsOrdered(offer.id, offer.customerId)}
+                            className="inline-flex items-center space-x-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                          >
+                            <CheckSquare className="h-3 w-3" />
+                            <span>Mark as Ordered</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {expandedOffer === `${offer.customerId}-${offer.id}` && (

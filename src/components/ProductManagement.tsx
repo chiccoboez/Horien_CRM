@@ -142,6 +142,79 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     }));
   };
 
+  const handleDeleteProduct = (productId: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      const updatedFamilies = productFamilies.map(family => ({
+        ...family,
+        products: family.products.filter(product => product.id !== productId)
+      }));
+
+      setProductFamilies(updatedFamilies);
+      if (onProductFamiliesUpdate) {
+        onProductFamiliesUpdate(updatedFamilies);
+      }
+    }
+  };
+
+  const handleAddCustomerToProduct = (productId: string) => {
+    const updatedFamilies = productFamilies.map(family => ({
+      ...family,
+      products: family.products.map(product => {
+        if (product.id === productId) {
+          return {
+            ...product,
+            customerPrices: [...product.customerPrices, { customerId: '', price: 0, discountedPrice: 0 }]
+          };
+        }
+        return product;
+      })
+    }));
+
+    setProductFamilies(updatedFamilies);
+    if (onProductFamiliesUpdate) {
+      onProductFamiliesUpdate(updatedFamilies);
+    }
+  };
+
+  const handleUpdateCustomerPrice = (productId: string, index: number, field: 'customerId' | 'price' | 'discountedPrice', value: string | number) => {
+    const updatedFamilies = productFamilies.map(family => ({
+      ...family,
+      products: family.products.map(product => {
+        if (product.id === productId) {
+          const updatedPrices = [...product.customerPrices];
+          updatedPrices[index] = { ...updatedPrices[index], [field]: value };
+          return { ...product, customerPrices: updatedPrices };
+        }
+        return product;
+      })
+    }));
+
+    setProductFamilies(updatedFamilies);
+    if (onProductFamiliesUpdate) {
+      onProductFamiliesUpdate(updatedFamilies);
+    }
+  };
+
+  const handleRemoveCustomerPrice = (productId: string, index: number) => {
+    const updatedFamilies = productFamilies.map(family => ({
+      ...family,
+      products: family.products.map(product => {
+        if (product.id === productId) {
+          return {
+            ...product,
+            customerPrices: product.customerPrices.filter((_, i) => i !== index)
+          };
+        }
+        return product;
+      })
+    }));
+
+    setProductFamilies(updatedFamilies);
+    if (onProductFamiliesUpdate) {
+      onProductFamiliesUpdate(updatedFamilies);
+    }
+  };
+
   const handleAddFamily = () => {
     if (addFamilyForm.name.trim()) {
       const newFamily: ProductFamily = {
@@ -461,6 +534,24 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                               </div>
                             </div>
                           </div>
+                          
+                          {isEditing && (
+                            <div className="flex items-center space-x-2 mt-4 lg:mt-0">
+                              <button
+                                onClick={() => handleAddCustomerToProduct(product.id)}
+                                className="inline-flex items-center space-x-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                              >
+                                <Plus className="h-3 w-3" />
+                                <span>Add Customer</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
 
                         {/* Customer Pricing Table */}
@@ -473,19 +564,35 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                   <tr>
                                     <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Customer</th>
                                     <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Type</th>
-                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">P/N</th>
-                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Standard Price</th>
-                                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-900">Discounted Price</th>
+                                    <th className="text-center py-2 px-4 text-sm font-medium text-slate-900 w-32">P/N</th>
+                                    <th className="text-center py-2 px-4 text-sm font-medium text-slate-900 w-32">Standard Price</th>
+                                    <th className="text-center py-2 px-4 text-sm font-medium text-slate-900 w-32">Discounted Price</th>
+                                    {isEditing && <th className="text-center py-2 px-4 text-sm font-medium text-slate-900 w-20">Actions</th>}
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
-                                  {product.customerPrices.map((cp) => {
+                                  {product.customerPrices.map((cp, index) => {
                                     const customer = customers.find(c => c.id === cp.customerId);
                                     
                                     return (
-                                      <tr key={cp.customerId}>
+                                      <tr key={`${cp.customerId}-${index}`}>
                                         <td className="py-3 px-4">
-                                          <div className="font-medium text-slate-900">{customer?.name || 'Unknown'}</div>
+                                          {isEditing ? (
+                                            <select
+                                              value={cp.customerId}
+                                              onChange={(e) => handleUpdateCustomerPrice(product.id, index, 'customerId', e.target.value)}
+                                              className="w-full px-2 py-1 border border-slate-300 rounded text-sm"
+                                            >
+                                              <option value="">Select Customer</option>
+                                              {customers.map((customer) => (
+                                                <option key={customer.id} value={customer.id}>
+                                                  {customer.name}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          ) : (
+                                            <div className="font-medium text-slate-900">{customer?.name || 'Unknown'}</div>
+                                          )}
                                         </td>
                                         <td className="py-3 px-4">
                                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -498,9 +605,45 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                             {customer?.type || 'Unknown'}
                                           </span>
                                         </td>
-                                        <td className="py-3 px-4 text-slate-900">{formatValue(product.sku)}</td>
-                                        <td className="py-3 px-4 font-medium text-slate-900">€{cp.price.toFixed(2)}</td>
-                                        <td className="py-3 px-4 font-medium text-emerald-600">€{(cp.discountedPrice || cp.price).toFixed(2)}</td>
+                                        <td className="py-3 px-4 text-center w-32">
+                                          <span className="text-slate-900">{formatValue(product.sku)}</span>
+                                        </td>
+                                        <td className="py-3 px-4 text-center w-32">
+                                          {isEditing ? (
+                                            <input
+                                              type="number"
+                                              step="0.01"
+                                              value={cp.price}
+                                              onChange={(e) => handleUpdateCustomerPrice(product.id, index, 'price', Number(e.target.value))}
+                                              className="w-24 px-2 py-1 border border-slate-300 rounded text-sm text-center"
+                                            />
+                                          ) : (
+                                            <span className="font-medium text-slate-900">€{cp.price.toFixed(2)}</span>
+                                          )}
+                                        </td>
+                                        <td className="py-3 px-4 text-center w-32">
+                                          {isEditing ? (
+                                            <input
+                                              type="number"
+                                              step="0.01"
+                                              value={cp.discountedPrice || cp.price}
+                                              onChange={(e) => handleUpdateCustomerPrice(product.id, index, 'discountedPrice', Number(e.target.value))}
+                                              className="w-24 px-2 py-1 border border-slate-300 rounded text-sm text-center"
+                                            />
+                                          ) : (
+                                            <span className="font-medium text-emerald-600">€{(cp.discountedPrice || cp.price).toFixed(2)}</span>
+                                          )}
+                                        </td>
+                                        {isEditing && (
+                                          <td className="py-3 px-4 text-center w-20">
+                                            <button
+                                              onClick={() => handleRemoveCustomerPrice(product.id, index)}
+                                              className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </button>
+                                          </td>
+                                        )}
                                       </tr>
                                     );
                                   })}
