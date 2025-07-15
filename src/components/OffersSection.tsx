@@ -390,10 +390,9 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                     </span>
                     <button
                       onClick={() => handleMarkAsOrdered(offer.id)}
-                      className="inline-flex items-center space-x-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                      className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-sm"
                     >
-                      <CheckSquare className="h-3 w-3" />
-                      <span>Mark as Ordered</span>
+                      Mark as Ordered
                     </button>
                   </div>
                   {isEditing && (

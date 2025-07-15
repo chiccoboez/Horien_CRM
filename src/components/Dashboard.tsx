@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle, Check, CheckSquare } from 'lucide-react';
-import { Customer, Task } from '../types';
+import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle, Check, CheckSquare, Plane, MapPin, X, Save } from 'lucide-react';
+import { Customer, Task, BusinessTrip, TodoItem } from '../types';
 
 interface DashboardProps {
   customers: Customer[];
   globalTasks: Task[];
+  businessTrips: BusinessTrip[];
   onGlobalTasksUpdate: (tasks: Task[]) => void;
+  onBusinessTripsUpdate: (trips: BusinessTrip[]) => void;
   onCustomerUpdate?: (customer: Customer) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   customers, 
   globalTasks, 
+  businessTrips,
   onGlobalTasksUpdate,
+  onBusinessTripsUpdate,
   onCustomerUpdate 
 }) => {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'customer'>('date');
@@ -20,6 +24,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [filterPaid, setFilterPaid] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [showAddGlobalTask, setShowAddGlobalTask] = useState(false);
+  const [showAddBusinessTrip, setShowAddBusinessTrip] = useState(false);
   const [globalTaskForm, setGlobalTaskForm] = useState({
     title: '',
     description: '',
@@ -27,6 +32,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     expiryDate: new Date().toISOString().split('T')[0],
     urgent: false,
     veryUrgent: false
+  });
+  const [businessTripForm, setBusinessTripForm] = useState({
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    customersVisited: [] as string[],
+    countriesVisited: [] as string[],
+    details: '',
+    todoList: [] as TodoItem[]
   });
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [expandedOffer, setExpandedOffer] = useState<string | null>(null);
@@ -197,6 +210,100 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleAddBusinessTrip = () => {
+    if (businessTripForm.startDate && businessTripForm.endDate) {
+      const newTrip: BusinessTrip = {
+        id: `trip-${Date.now()}`,
+        startDate: businessTripForm.startDate,
+        endDate: businessTripForm.endDate,
+        customersVisited: businessTripForm.customersVisited,
+        countriesVisited: businessTripForm.countriesVisited,
+        details: businessTripForm.details,
+        todoList: businessTripForm.todoList,
+        createdAt: new Date().toISOString()
+      };
+      onBusinessTripsUpdate([newTrip, ...businessTrips]);
+      setBusinessTripForm({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        customersVisited: [],
+        countriesVisited: [],
+        details: '',
+        todoList: []
+      });
+      setShowAddBusinessTrip(false);
+    }
+  };
+
+  const handleAddCustomerToTrip = () => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      customersVisited: [...prev.customersVisited, '']
+    }));
+  };
+
+  const handleRemoveCustomerFromTrip = (index: number) => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      customersVisited: prev.customersVisited.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleCustomerChange = (index: number, value: string) => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      customersVisited: prev.customersVisited.map((customer, i) => 
+        i === index ? value : customer
+      )
+    }));
+  };
+
+  const handleAddCountryToTrip = () => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      countriesVisited: [...prev.countriesVisited, '']
+    }));
+  };
+
+  const handleRemoveCountryFromTrip = (index: number) => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      countriesVisited: prev.countriesVisited.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleCountryChange = (index: number, value: string) => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      countriesVisited: prev.countriesVisited.map((country, i) => 
+        i === index ? value : country
+      )
+    }));
+  };
+
+  const handleAddTodoItem = () => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      todoList: [...prev.todoList, { id: `todo-${Date.now()}`, task: '', completed: false }]
+    }));
+  };
+
+  const handleRemoveTodoItem = (index: number) => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      todoList: prev.todoList.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleTodoChange = (index: number, value: string) => {
+    setBusinessTripForm(prev => ({
+      ...prev,
+      todoList: prev.todoList.map((todo, i) => 
+        i === index ? { ...todo, task: value } : todo
+      )
+    }));
+  };
+
   const handleCompleteTask = (taskId: string, customerId: string) => {
     if (customerId === 'global') {
       // Handle global tasks
@@ -229,6 +336,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     }
   };
+
+  // Get unique countries from customers
+  const uniqueCountries = Array.from(
+    new Set(
+      customers
+        .map(customer => customer.address.country)
+        .filter(country => country && country.trim() !== '')
+    )
+  ).sort();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -487,6 +603,280 @@ export const Dashboard: React.FC<DashboardProps> = ({
         )}
       </div>
 
+      {/* Business Trips Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Plane className="h-5 w-5 text-slate-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Business Trips</h3>
+            </div>
+            <button
+              onClick={() => setShowAddBusinessTrip(true)}
+              className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Trip</span>
+            </button>
+          </div>
+        </div>
+
+        {businessTrips.length === 0 ? (
+          <div className="text-center py-12">
+            <Plane className="mx-auto h-12 w-12 text-slate-400" />
+            <h3 className="mt-2 text-sm font-medium text-slate-900">No business trips planned</h3>
+            <p className="mt-1 text-sm text-slate-500">Add your first business trip to get started.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-200">
+            {businessTrips.slice(0, 5).map((trip) => (
+              <div key={trip.id} className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <MapPin className="h-5 w-5 text-emerald-600" />
+                    <div>
+                      <h4 className="font-medium text-slate-900">
+                        {new Date(trip.startDate).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })} - {new Date(trip.endDate).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </h4>
+                      <p className="text-sm text-slate-500">
+                        {trip.countriesVisited.join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-slate-700">Customers:</span>
+                    <p className="text-slate-600">
+                      {trip.customersVisited.length > 0 
+                        ? trip.customersVisited.map(customerId => {
+                            const customer = customers.find(c => c.id === customerId);
+                            return customer?.name || 'Unknown';
+                          }).join(', ')
+                        : 'None specified'
+                      }
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-slate-700">To-Do Items:</span>
+                    <p className="text-slate-600">
+                      {trip.todoList.length} tasks planned
+                    </p>
+                  </div>
+                </div>
+                
+                {trip.details && (
+                  <div className="mt-3">
+                    <span className="font-medium text-slate-700 text-sm">Details:</span>
+                    <p className="text-sm text-slate-600 mt-1">{trip.details}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add Business Trip Modal */}
+      {showAddBusinessTrip && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-900">Add Business Trip</h2>
+                <button
+                  onClick={() => setShowAddBusinessTrip(false)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Dates */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={businessTripForm.startDate}
+                    onChange={(e) => setBusinessTripForm({ ...businessTripForm, startDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    End Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={businessTripForm.endDate}
+                    onChange={(e) => setBusinessTripForm({ ...businessTripForm, endDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Customers Visited */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Customers to Visit
+                  </label>
+                  <button
+                    onClick={handleAddCustomerToTrip}
+                    className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Customer</span>
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {businessTripForm.customersVisited.map((customerId, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <select
+                        value={customerId}
+                        onChange={(e) => handleCustomerChange(index, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      >
+                        <option value="">Select Customer</option>
+                        {customers.map((customer) => (
+                          <option key={customer.id} value={customer.id}>
+                            {customer.name} ({customer.address.country})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleRemoveCustomerFromTrip(index)}
+                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Countries Visited */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Countries to Visit
+                  </label>
+                  <button
+                    onClick={handleAddCountryToTrip}
+                    className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Country</span>
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {businessTripForm.countriesVisited.map((country, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <select
+                        value={country}
+                        onChange={(e) => handleCountryChange(index, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      >
+                        <option value="">Select Country</option>
+                        {uniqueCountries.map((countryOption) => (
+                          <option key={countryOption} value={countryOption}>
+                            {countryOption}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleRemoveCountryFromTrip(index)}
+                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Details */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Details
+                </label>
+                <textarea
+                  value={businessTripForm.details}
+                  onChange={(e) => setBusinessTripForm({ ...businessTripForm, details: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  placeholder="Add any additional details about the trip..."
+                />
+              </div>
+
+              {/* To-Do List */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    To-Do List
+                  </label>
+                  <button
+                    onClick={handleAddTodoItem}
+                    className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Task</span>
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {businessTripForm.todoList.map((todo, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={todo.task}
+                        onChange={(e) => handleTodoChange(index, e.target.value)}
+                        placeholder="Enter task..."
+                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={() => handleRemoveTodoItem(index)}
+                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4 border-t border-slate-200">
+                <button
+                  onClick={() => setShowAddBusinessTrip(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddBusinessTrip}
+                  disabled={!businessTripForm.startDate || !businessTripForm.endDate}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Add Trip
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Last Offers Table */}
       {lastOffers.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
@@ -551,10 +941,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </button>
                           <button
                             onClick={() => handleMarkOfferAsOrdered(offer.id, offer.customerId)}
-                            className="inline-flex items-center space-x-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                            className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-sm"
                           >
-                            <CheckSquare className="h-3 w-3" />
-                            <span>Mark as Ordered</span>
+                            Mark as Ordered
                           </button>
                         </div>
                       </td>

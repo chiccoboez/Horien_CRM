@@ -8,7 +8,7 @@ import { SaudiRacks } from './components/SaudiRacks';
 import { CertificationCalculator } from './components/CertificationCalculator';
 import { ExcelUpload } from './components/ExcelUpload';
 import { mockCustomers, mockProductFamilies } from './data/mockData';
-import { Customer, ProductFamily, View, Task } from './types';
+import { Customer, ProductFamily, View, Task, BusinessTrip } from './types';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -16,6 +16,7 @@ function App() {
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [productFamilies, setProductFamilies] = useState<ProductFamily[]>(mockProductFamilies);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
+  const [businessTrips, setBusinessTrips] = useState<BusinessTrip[]>([]);
   const [globalTasks, setGlobalTasks] = useState<Task[]>([
     {
       id: 'global-1',
@@ -105,6 +106,10 @@ function App() {
     setGlobalTasks(tasks);
   };
 
+  const handleBusinessTripsUpdate = (trips: BusinessTrip[]) => {
+    setBusinessTrips(trips);
+  };
+
   const handleProductFamiliesUpdate = (families: ProductFamily[]) => {
     setProductFamilies(families);
   };
@@ -118,7 +123,9 @@ function App() {
           <Dashboard 
             customers={customers} 
             globalTasks={globalTasks}
+            businessTrips={businessTrips}
             onGlobalTasksUpdate={handleGlobalTasksUpdate}
+            onBusinessTripsUpdate={handleBusinessTripsUpdate}
             onCustomerUpdate={handleCustomerUpdate}
           />
         )}
