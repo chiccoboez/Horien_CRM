@@ -51,6 +51,23 @@ export interface Task {
   veryUrgent?: boolean;
 }
 
+export interface BusinessTrip {
+  id: string;
+  startDate: string;
+  endDate: string;
+  customersVisited: string[];
+  countriesVisited: string[];
+  details: string;
+  todoList: TodoItem[];
+  createdAt: string;
+}
+
+export interface TodoItem {
+  id: string;
+  task: string;
+  completed: boolean;
+}
+
 export interface Offer {
   id: string;
   date: string;
