@@ -284,7 +284,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     }));
   };
 
-  const handleRemoveCustomerPrice = (index: number) => {
+  const handleRemoveAddProductCustomerPrice = (index: number) => {
     setAddProductForm(prev => ({
       ...prev,
       customerPrices: prev.customerPrices.filter((_, i) => i !== index)
@@ -883,7 +883,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                       </div>
                       <div className="flex items-end">
                         <button
-                          onClick={() => handleRemoveCustomerPrice(index)}
+                          onClick={() => handleRemoveAddProductCustomerPrice(index)}
                           className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
