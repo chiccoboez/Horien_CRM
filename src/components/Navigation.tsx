@@ -13,7 +13,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChang
     { id: 'customers' as View, label: 'Customers', icon: Users },
     { id: 'products' as View, label: 'Products', icon: Package },
     { id: 'saudi-racks' as View, label: 'Components List', icon: FileSpreadsheet },
-    { id: 'certification-calculator' as View, label: 'Certification of Origin Calculator', icon: Calculator }
+    { id: 'certification-calculator' as View, label: 'Certification of Origin Calculator', icon: Calculator },
+    { id: 'trips' as View, label: 'Trips', icon: Plane }
   ];
 
   return (

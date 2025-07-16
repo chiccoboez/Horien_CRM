@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle, Check, CheckSquare, Plane, MapPin, X, Save } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, ShoppingCart, Euro, FileText, Calendar, CheckCircle, Clock, Eye, Plus, Trash2, Edit, AlertTriangle, Check, CheckSquare, Plane, MapPin, X, Save, Edit2 } from 'lucide-react';
 import { Customer, Task, BusinessTrip, TodoItem } from '../types';
 
 interface DashboardProps {
@@ -31,11 +31,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     registrationDate: new Date().toISOString().split('T')[0],
     expiryDate: new Date().toISOString().split('T')[0],
     urgent: false,
-    veryUrgent: false
+    veryUrgent: false,
+    customerId: ''
   });
   const [businessTripForm, setBusinessTripForm] = useState({
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
+    city: '',
     customersVisited: [] as string[],
     countriesVisited: [] as string[],
     details: '',
@@ -43,6 +45,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   });
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [expandedOffer, setExpandedOffer] = useState<string | null>(null);
+  const [expandedTrip, setExpandedTrip] = useState<string | null>(null);
+  const [editingTrip, setEditingTrip] = useState<BusinessTrip | null>(null);
 
   // Get current month start and end dates
   const now = new Date();
@@ -72,7 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         offerName: offer.offerName,
         amount: offer.amount,
         ocName: offer.ocName,
-        paid: offer.paid,
+        paid: false,
         documents: offer.documents || [],
         customerName: customer.name,
         customerId: customer.id
@@ -171,6 +175,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Calculate totals for displayed orders
   const totalAmount = filteredOrders.reduce((sum, order) => sum + order.amount, 0);
 
+  // Get last 3 business trips
+  const recentTrips = businessTrips
+    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+    .slice(0, 3);
+
   const handleSort = (column: 'date' | 'amount' | 'customer') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -195,16 +204,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
         completed: false,
         createdAt: new Date().toISOString(),
         urgent: globalTaskForm.urgent,
-        veryUrgent: globalTaskForm.veryUrgent
+        veryUrgent: globalTaskForm.veryUrgent,
+        customerId: globalTaskForm.customerId || undefined
       };
-      onGlobalTasksUpdate([newTask, ...globalTasks]);
+
+      if (globalTaskForm.customerId) {
+        // Add task to specific customer
+        if (onCustomerUpdate) {
+          const customer = customers.find(c => c.id === globalTaskForm.customerId);
+          if (customer) {
+            const updatedTasks = [...(customer.tasks || []), newTask];
+            onCustomerUpdate({ ...customer, tasks: updatedTasks });
+          }
+        }
+      } else {
+        // Add as global task
+        onGlobalTasksUpdate([newTask, ...globalTasks]);
+      }
+
       setGlobalTaskForm({
         title: '',
         description: '',
         registrationDate: new Date().toISOString().split('T')[0],
         expiryDate: new Date().toISOString().split('T')[0],
         urgent: false,
-        veryUrgent: false
+        veryUrgent: false,
+        customerId: ''
       });
       setShowAddGlobalTask(false);
     }
@@ -216,6 +241,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         id: `trip-${Date.now()}`,
         startDate: businessTripForm.startDate,
         endDate: businessTripForm.endDate,
+        city: businessTripForm.city,
         customersVisited: businessTripForm.customersVisited,
         countriesVisited: businessTripForm.countriesVisited,
         details: businessTripForm.details,
@@ -226,12 +252,65 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setBusinessTripForm({
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
+        city: '',
         customersVisited: [],
         countriesVisited: [],
         details: '',
         todoList: []
       });
       setShowAddBusinessTrip(false);
+    }
+  };
+
+  const handleEditTrip = (trip: BusinessTrip) => {
+    setEditingTrip(trip);
+    setBusinessTripForm({
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      city: trip.city,
+      customersVisited: trip.customersVisited,
+      countriesVisited: trip.countriesVisited,
+      details: trip.details,
+      todoList: trip.todoList
+    });
+    setShowAddBusinessTrip(true);
+  };
+
+  const handleUpdateTrip = () => {
+    if (editingTrip && businessTripForm.startDate && businessTripForm.endDate && businessTripForm.customersVisited.length > 0) {
+      const updatedTrip: BusinessTrip = {
+        ...editingTrip,
+        startDate: businessTripForm.startDate,
+        endDate: businessTripForm.endDate,
+        city: businessTripForm.city,
+        customersVisited: businessTripForm.customersVisited,
+        countriesVisited: businessTripForm.countriesVisited,
+        details: businessTripForm.details,
+        todoList: businessTripForm.todoList
+      };
+      
+      const updatedTrips = businessTrips.map(trip => 
+        trip.id === editingTrip.id ? updatedTrip : trip
+      );
+      onBusinessTripsUpdate(updatedTrips);
+      
+      setBusinessTripForm({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        city: '',
+        customersVisited: [],
+        countriesVisited: [],
+        details: '',
+        todoList: []
+      });
+      setEditingTrip(null);
+      setShowAddBusinessTrip(false);
+    }
+  };
+
+  const handleDeleteTrip = (tripId: string) => {
+    if (window.confirm('Are you sure you want to delete this trip?')) {
+      onBusinessTripsUpdate(businessTrips.filter(trip => trip.id !== tripId));
     }
   };
 
@@ -446,6 +525,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 rows={3}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Assign to Customer (Optional)</label>
+                <select
+                  value={globalTaskForm.customerId}
+                  onChange={(e) => setGlobalTaskForm({ ...globalTaskForm, customerId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                >
+                  <option value="">No customer assigned</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name} ({customer.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <input
@@ -576,6 +670,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <tr>
                       <td colSpan={5} className="px-6 py-4 bg-slate-50">
                         <div className="space-y-2">
+                          {task.customerId && (
+                            <div className="mb-2">
+                              <span className="text-sm font-medium text-slate-700">Customer: </span>
+                              <span className="text-sm text-slate-900">
+                                {customers.find(c => c.id === task.customerId)?.name || 'Unknown'}
+                              </span>
+                            </div>
+                          )}
                           <div>
                             <span className="text-sm font-medium text-slate-700">Description:</span>
                             <p className="text-sm text-slate-900 mt-1">{task.description}</p>
@@ -604,86 +706,102 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Business Trips Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Plane className="h-5 w-5 text-slate-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Business Trips</h3>
+      {recentTrips.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+          <div className="p-6 border-b border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Plane className="h-5 w-5 text-slate-600" />
+                <h3 className="text-lg font-semibold text-slate-900">Business Trips</h3>
+              </div>
+              <button
+                onClick={() => setShowAddBusinessTrip(true)}
+                className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Trip</span>
+              </button>
             </div>
-            <button
-              onClick={() => setShowAddBusinessTrip(true)}
-              className="inline-flex items-center space-x-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Trip</span>
-            </button>
           </div>
-        </div>
 
-        {businessTrips.length === 0 ? (
-          <div className="text-center py-12">
-            <Plane className="mx-auto h-12 w-12 text-slate-400" />
-            <h3 className="mt-2 text-sm font-medium text-slate-900">No business trips planned</h3>
-            <p className="mt-1 text-sm text-slate-500">Add your first business trip to get started.</p>
-          </div>
-        ) : (
           <div className="divide-y divide-slate-200">
-            {businessTrips.slice(0, 5).map((trip) => (
+            {recentTrips.map((trip) => (
               <div key={trip.id} className="p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <MapPin className="h-5 w-5 text-emerald-600" />
                     <div>
-                      <h4 className="font-medium text-slate-900">
-                        {new Date(trip.startDate).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })} - {new Date(trip.endDate).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        })}
+                      <h4 className="font-medium">
+                        <span className="text-lg font-bold text-slate-900">
+                          {trip.city ? `${trip.city}, ` : ''}{trip.countriesVisited.join(', ')}
+                        </span>
+                        <span className="text-slate-600 ml-2">
+                          {new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
                       </h4>
-                      <p className="text-sm text-slate-500">
-                        {trip.countriesVisited.join(', ')}
-                      </p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-slate-700">Customers:</span>
-                    <p className="text-slate-600">
-                      {trip.customersVisited.length > 0 
-                        ? trip.customersVisited.map(customerId => {
-                            const customer = customers.find(c => c.id === customerId);
-                            return customer?.name || 'Unknown';
-                          }).join(', ')
-                        : 'None specified'
-                      }
-                    </p>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-slate-500">
+                      {trip.customersVisited.length} customers • {trip.todoList.length} tasks
+                    </span>
+                    <button
+                      onClick={() => setExpandedTrip(expandedTrip === trip.id ? null : trip.id)}
+                      className="p-1 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEditTrip(trip)}
+                      className="p-1 text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTrip(trip.id)}
+                      className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <div>
-                    <span className="font-medium text-slate-700">To-Do Items:</span>
-                    <p className="text-slate-600">
-                      {trip.todoList.length} tasks planned
-                    </p>
-                  </div>
                 </div>
-                
-                {trip.details && (
-                  <div className="mt-3">
-                    <span className="font-medium text-slate-700 text-sm">Details:</span>
-                    <p className="text-sm text-slate-600 mt-1">{trip.details}</p>
+
+                {expandedTrip === trip.id && (
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    <div className="text-sm text-slate-600 mb-2">
+                      <strong>Customers:</strong> {trip.customersVisited.map(customerId => 
+                        customers.find(c => c.id === customerId)?.name || 'Unknown'
+                      ).join(', ')}
+                    </div>
+                    
+                    {trip.details && (
+                      <div className="text-sm text-slate-600 mb-3">
+                        <strong>Details:</strong> {trip.details}
+                      </div>
+                    )}
+                    
+                    {trip.todoList.length > 0 && (
+                      <div>
+                        <strong className="text-sm text-slate-700">To-Do List:</strong>
+                        <ul className="mt-1 space-y-1">
+                          {trip.todoList.map((todo) => (
+                            <li key={todo.id} className="flex items-center space-x-2 text-sm">
+                              <span className={`w-2 h-2 rounded-full ${todo.completed ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                              <span className={todo.completed ? 'line-through text-slate-500' : 'text-slate-700'}>
+                                {todo.task}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Add Business Trip Modal */}
       {showAddBusinessTrip && (
@@ -691,7 +809,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">Add Business Trip</h2>
+                <h2 className="text-xl font-semibold text-slate-900">
+                  {editingTrip ? 'Edit Business Trip' : 'Add Business Trip'}
+                </h2>
                 <button
                   onClick={() => setShowAddBusinessTrip(false)}
                   className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -726,6 +846,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
+                <input
+                  type="text"
+                  value={businessTripForm.city}
+                  onChange={(e) => setBusinessTripForm({ ...businessTripForm, city: e.target.value })}
+                  placeholder="e.g., Rome"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
               </div>
 
               {/* Customers Visited */}
@@ -859,18 +990,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               <div className="flex space-x-3 pt-4 border-t border-slate-200">
                 <button
-                  onClick={() => setShowAddBusinessTrip(false)}
+                  onClick={() => {
+                    setShowAddBusinessTrip(false);
+                    setEditingTrip(null);
+                    setBusinessTripForm({
+                      startDate: new Date().toISOString().split('T')[0],
+                      endDate: new Date().toISOString().split('T')[0],
+                      city: '',
+                      customersVisited: [],
+                      countriesVisited: [],
+                      details: '',
+                      todoList: []
+                    });
+                  }}
                   className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleAddBusinessTrip}
+                  onClick={editingTrip ? handleUpdateTrip : handleAddBusinessTrip}
                   disabled={!businessTripForm.startDate || !businessTripForm.endDate}
                   className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
                 >
-                  Add Trip
+                  {editingTrip ? 'Update Trip' : 'Add Trip'}
                 </button>
+                {editingTrip && (
+                  <button
+                    onClick={() => {
+                      handleDeleteTrip(editingTrip.id);
+                      setShowAddBusinessTrip(false);
+                      setEditingTrip(null);
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           </div>

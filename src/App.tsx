@@ -6,6 +6,7 @@ import { CustomerDetail } from './components/CustomerDetail';
 import { ProductManagement } from './components/ProductManagement';
 import { SaudiRacks } from './components/SaudiRacks';
 import { CertificationCalculator } from './components/CertificationCalculator';
+import { TripsManagement } from './components/TripsManagement';
 import { ExcelUpload } from './components/ExcelUpload';
 import { mockCustomers, mockProductFamilies } from './data/mockData';
 import { Customer, ProductFamily, View, Task, BusinessTrip } from './types';
@@ -163,6 +164,14 @@ function App() {
 
         {currentView === 'certification-calculator' && (
           <CertificationCalculator />
+        )}
+        
+        {currentView === 'trips' && (
+          <TripsManagement
+            businessTrips={businessTrips}
+            customers={customers}
+            onBusinessTripsUpdate={handleBusinessTripsUpdate}
+          />
         )}
       </main>
 
