@@ -195,20 +195,7 @@ export const mockCustomers: Customer[] = [
     ],
     orders: [],
     documents: [],
-    tasks: [],
-    offers: [
-      {
-        id: '5',
-        date: '2024-01-17',
-        finalUser: 'Research Institute',
-        projectName: 'Lab Equipment Power',
-        offerName: 'LEP-2024-005',
-        amount: 12000,
-        ocName: 'David Brown',
-        markedAsOrdered: false,
-        documents: []
-      }
-    ]
+    tasks: []
   }
 ];
 
