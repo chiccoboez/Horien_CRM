@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Package, FileSpreadsheet, Calculator, BarChart3 } from 'lucide-react';
+import { Users, Package, FileSpreadsheet, Calculator, BarChart3, Plane } from 'lucide-react';
 import { View } from '../types';
 
 interface NavigationProps {

@@ -429,7 +429,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                   {order.amount > 0 && (
                     <div>
                       <span className="text-sm font-medium text-slate-700">Amount:</span>
-                      <span className="ml-2 text-slate-900">€{order.amount.toLocaleString()}</span>
+                      <span className="ml-2 text-slate-900">€{order.amount}</span>
                     </div>
                   )}
                   {order.ocName && (
@@ -438,6 +438,14 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                       <span className="ml-2 text-slate-900">{order.ocName}</span>
                     </div>
                   )}
+                  <div>
+                    <span className="text-sm font-medium text-slate-700">Payment Status:</span>
+                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                      order.paid ? 'bg-emerald-100 text-emerald-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {order.paid ? 'Paid' : 'Pending'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Documents */}

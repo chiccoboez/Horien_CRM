@@ -200,8 +200,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
       projectName: '',
       offerName: '',
       amount: 0,
-      ocName: '',
-      paid: 'No'
+      ocName: ''
     });
     setShowAddForm(false);
     setEditingOffer(null);
@@ -367,6 +366,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                     <button
                       onClick={() => handleMarkAsOrdered(offer.id)}
                       className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-sm"
+                      title="Mark as Ordered"
                     >
                       Mark as Ordered
                     </button>
@@ -407,7 +407,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                   {offer.amount > 0 && (
                     <div>
                       <span className="text-sm font-medium text-slate-700">Amount:</span>
-                      <span className="ml-2 text-slate-900">€{offer.amount.toLocaleString()}</span>
+                      <span className="ml-2 text-slate-900">€{offer.amount}</span>
                     </div>
                   )}
                   {offer.ocName && (

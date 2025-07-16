@@ -525,9 +525,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                             <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
                               <div className="flex items-center space-x-2">
                                 <DollarSign className="h-5 w-5 text-emerald-600" />
-                                <div>
-                                  <div className="text-sm text-slate-500">Average Price</div>
-                                  <div className="font-semibold text-slate-900">
+                          <th className="text-center py-2 px-4 text-sm font-medium text-slate-900" style={{width: '120px'}}>P/N</th>
+                          <th className="text-center py-2 px-4 text-sm font-medium text-slate-900" style={{width: '120px'}}>Standard Price</th>
+                          <th className="text-center py-2 px-4 text-sm font-medium text-slate-900" style={{width: '120px'}}>Discounted Price</th>
                                     {stats.avgPrice > 0 ? `€${stats.avgPrice.toFixed(2)}` : '-'}
                                   </div>
                                 </div>
@@ -610,30 +610,30 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                         </td>
                                         <td className="py-3 px-4 text-center w-32">
                                           {isEditing ? (
-                                            <input
+                              <td className="py-3 px-4 text-center" style={{width: '120px'}}>
                                               type="number"
                                               step="0.01"
-                                              value={cp.price}
+                              <td className="py-3 px-4 text-center" style={{width: '120px'}}>
                                               onChange={(e) => handleUpdateCustomerPrice(product.id, index, 'price', Number(e.target.value))}
                                               className="w-24 px-2 py-1 border border-slate-300 rounded text-sm text-center"
                                             />
                                           ) : (
                                             <span className="font-medium text-slate-900">€{cp.price.toFixed(2)}</span>
                                           )}
-                                        </td>
+                                    className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center"
                                         <td className="py-3 px-4 text-center w-32">
                                           {isEditing ? (
                                             <input
                                               type="number"
                                               step="0.01"
-                                              value={cp.discountedPrice || cp.price}
+                              <td className="py-3 px-4 text-center" style={{width: '120px'}}>
                                               onChange={(e) => handleUpdateCustomerPrice(product.id, index, 'discountedPrice', Number(e.target.value))}
                                               className="w-24 px-2 py-1 border border-slate-300 rounded text-sm text-center"
                                             />
                                           ) : (
                                             <span className="font-medium text-emerald-600">€{(cp.discountedPrice || cp.price).toFixed(2)}</span>
                                           )}
-                                        </td>
+                                    className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center"
                                         {isEditing && (
                                           <td className="py-3 px-4 text-center w-20">
                                             <button
@@ -644,6 +644,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                                             </button>
                                           </td>
                                         )}
+                                    title="Remove Customer"
                                       </tr>
                                     );
                                   })}

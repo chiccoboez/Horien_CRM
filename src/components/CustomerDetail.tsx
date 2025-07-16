@@ -609,9 +609,9 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                       <thead className="bg-slate-50">
                         <tr>
                           <th className="text-left py-2 px-4 font-medium text-slate-900">Product</th>
-                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-32">P/N</th>
-                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-32">Standard Price</th>
-                          <th className="text-center py-2 px-4 font-medium text-slate-900 w-32">Discounted Price</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900" style={{width: '120px'}}>P/N</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900" style={{width: '120px'}}>Standard Price</th>
+                          <th className="text-center py-2 px-4 font-medium text-slate-900" style={{width: '120px'}}>Discounted Price</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -623,10 +623,10 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                                 <div className="text-sm text-slate-500">{product.description}</div>
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-center w-32">
+                            <td className="py-3 px-4 text-center" style={{width: '120px'}}>
                               <span className="text-slate-900">{formatValue(product.sku)}</span>
                             </td>
-                            <td className="py-3 px-4 text-center w-32">
+                            <td className="py-3 px-4 text-center" style={{width: '120px'}}>
                               {isPricingEditable ? (
                                 <input
                                   type="number"
@@ -640,13 +640,13 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                                       discountedPrice: editedPricing[product.id]?.discountedPrice || product.discountedPrice
                                     }
                                   })}
-                                  className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent mx-auto"
+                                  className="w-full px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center"
                                 />
                               ) : (
                                 <span className="font-medium text-slate-900">€{product.customerPrice.toFixed(2)}</span>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-center w-32">
+                            <td className="py-3 px-4 text-center" style={{width: '120px'}}>
                               {isPricingEditable ? (
                                 <input
                                   type="number"
@@ -660,7 +660,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
                                       discountedPrice: Number(e.target.value)
                                     }
                                   })}
-                                  className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent mx-auto"
+                                  className="w-full px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center"
                                 />
                               ) : (
                                 <span className="font-medium text-emerald-600">€{product.discountedPrice.toFixed(2)}</span>
