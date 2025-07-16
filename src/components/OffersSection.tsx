@@ -25,9 +25,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
     projectName: '',
     offerName: '',
     amount: 0,
-    ocName: '',
-    paid: 'No'
-  });
+    ocName: ''
   const [folderStructures, setFolderStructures] = useState<{[offerId: string]: FolderStructure}>({});
   const [expandedFolders, setExpandedFolders] = useState<{[key: string]: boolean}>({});
 
@@ -36,7 +34,6 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
       const newOffer: Offer = {
         id: Date.now().toString(),
         ...formData,
-        paid: formData.paid === 'Yes',
         markedAsOrdered: false,
         documents: []
       };
@@ -53,8 +50,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
       projectName: offer.projectName,
       offerName: offer.offerName,
       amount: offer.amount,
-      ocName: offer.ocName,
-      paid: offer.paid ? 'Yes' : 'No'
+      ocName: offer.ocName
     });
   };
 
@@ -62,7 +58,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
     if (editingOffer && formData.finalUser.trim() && formData.projectName.trim()) {
       const updatedOffers = offers.map(o =>
         o.id === editingOffer.id
-          ? { ...editingOffer, ...formData, paid: formData.paid === 'Yes' }
+          ? { ...editingOffer, ...formData }
           : o
       );
       onOffersUpdate(updatedOffers);
@@ -282,14 +278,6 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                 onChange={(e) => setFormData({ ...formData, ocName: e.target.value })}
                 className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
-              <select
-                value={formData.paid}
-                onChange={(e) => setFormData({ ...formData, paid: e.target.value })}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="No">No</option>
-                <option value="Yes">Yes</option>
-              </select>
             </div>
             <div className="flex space-x-2 mt-3">
               <button
@@ -354,14 +342,6 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                     onChange={(e) => setFormData({ ...formData, ocName: e.target.value })}
                     className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   />
-                  <select
-                    value={formData.paid}
-                    onChange={(e) => setFormData({ ...formData, paid: e.target.value })}
-                    className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  >
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                  </select>
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -383,11 +363,6 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-4">
                     <span className="text-sm text-slate-500">{new Date(offer.date).toLocaleDateString()}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      offer.paid ? 'bg-emerald-100 text-emerald-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {offer.paid ? 'Paid' : 'Pending'}
-                    </span>
                     <button
                       onClick={() => handleMarkAsOrdered(offer.id)}
                       className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-sm"

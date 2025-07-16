@@ -278,6 +278,14 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>
+              <select
+                value={formData.paid}
+                onChange={(e) => setFormData({ ...formData, paid: e.target.value })}
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
             </div>
             <div className="flex space-x-2 mt-3">
               <button
@@ -342,6 +350,14 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                     onChange={(e) => setFormData({ ...formData, ocName: e.target.value })}
                     className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   />
+                  <select
+                    value={formData.paid}
+                    onChange={(e) => setFormData({ ...formData, paid: e.target.value })}
+                    className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  >
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </select>
                   <select
                     value={formData.paid}
                     onChange={(e) => setFormData({ ...formData, paid: e.target.value })}

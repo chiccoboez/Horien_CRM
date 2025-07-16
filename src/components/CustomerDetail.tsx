@@ -105,14 +105,15 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({
   };
 
   const getCustomerPricing = () => {
-    const pricing: { [familyName: string]: any[] } = {};
+        paid: false,
     
     productFamilies.forEach(family => {
       const familyPricing = family.products
         .map(product => {
           const customerPrice = product.customerPrices.find(cp => cp.customerId === customer.id);
           if (!customerPrice) return null;
-          
+        })),
+        customerId: editedCustomer.id
           const currentPricing = editedPricing[product.id];
           return {
             ...product,

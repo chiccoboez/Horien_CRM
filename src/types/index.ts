@@ -49,12 +49,14 @@ export interface Task {
   createdAt: string;
   urgent?: boolean;
   veryUrgent?: boolean;
+  customerId?: string;
 }
 
 export interface BusinessTrip {
   id: string;
   startDate: string;
   endDate: string;
+  city: string;
   customersVisited: string[];
   countriesVisited: string[];
   details: string;
@@ -91,7 +93,7 @@ export interface Order {
   ocName: string;
   paid: boolean;
   documents: OrderDocument[];
-  originalOfferId?: string;
+  customerId?: string;
 }
 
 export interface OrderDocument {
@@ -139,4 +141,4 @@ export interface Product {
   }[];
 }
 
-export type View = 'dashboard' | 'customers' | 'customer-detail' | 'products' | 'saudi-racks' | 'certification-calculator';
+export type View = 'dashboard' | 'customers' | 'customer-detail' | 'products' | 'saudi-racks' | 'certification-calculator' | 'trips';
