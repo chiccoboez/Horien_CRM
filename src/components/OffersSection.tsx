@@ -26,6 +26,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
     offerName: '',
     amount: 0,
     ocName: ''
+  });
   const [folderStructures, setFolderStructures] = useState<{[offerId: string]: FolderStructure}>({});
   const [expandedFolders, setExpandedFolders] = useState<{[key: string]: boolean}>({});
 
