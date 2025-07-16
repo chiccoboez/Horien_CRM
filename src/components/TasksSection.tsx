@@ -323,10 +323,16 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
                       <Check className="h-5 w-5" />
                     </button>
                     {task.veryUrgent && !task.completed && (
-                      <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-red-600"></div>
+                      <div className="flex items-center space-x-1 text-red-600">
+                        <AlertTriangle className="h-4 w-4 fill-current" />
+                        <span className="text-xs font-medium">!</span>
+                      </div>
                     )}
                     {task.urgent && !task.veryUrgent && !task.completed && (
-                      <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-orange-600"></div>
+                      <div className="flex items-center space-x-1 text-orange-600">
+                        <AlertTriangle className="h-4 w-4 fill-current" />
+                        <span className="text-xs font-medium">!</span>
+                      </div>
                     )}
                     <h4 className={`font-medium ${
                       task.completed ? 'text-emerald-800 line-through' : 
